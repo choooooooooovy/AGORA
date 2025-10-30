@@ -1,0 +1,167 @@
+round1_criteria_generation:
+  director_question: |
+    우리는 사용자의 전공 선택을 돕기 위한 평가 기준을 설정하려고 합니다.
+    
+    사용자 정보:
+    {user_context}
+    
+    대안 전공:
+    {majors}
+    
+    각 에이전트는 자신의 관점에서 중요한 평가 기준을 제안해주세요.
+    기준 제안 시 다음을 포함해주세요:
+    1. 기준 이름 (간결하게)
+    2. 기준 설명 (왜 중요한지)
+    3. 기준 유형 (benefit: 높을수록 좋음 / cost: 낮을수록 좋음)
+    
+    형식:
+    - 기준명: [이름]
+    - 설명: [상세 설명]
+    - 유형: [benefit/cost]
+    - 이유: [왜 이 기준이 중요한지]
+
+  agent_response_format: |
+    - 기준명: 
+    - 설명: 
+    - 유형: 
+    - 이유:
+
+  director_consensus: |
+    세 에이전트가 다음 기준들을 제안했습니다:
+    {all_proposals}
+    
+    사용자 가중치:
+    - ValueAgent: {value_weight}0%
+    - FitAgent: {fit_weight}0%
+    - MarketAgent: {market_weight}0%
+    
+    최대 {max_criteria}개의 기준으로 압축해주세요.
+    
+    선정 원칙:
+    1. 가중치가 높은 에이전트의 기준 우선 고려
+    2. 중복되거나 유사한 기준 통합
+    3. 전공 비교에 실질적으로 유용한 기준 선택
+    4. benefit/cost 기준 균형있게 포함
+    
+    최종 확정 기준을 다음 형식으로 제시:
+    1. [기준명] (유형: benefit/cost) - 제안: [에이전트명]
+       설명: [통합된 설명]
+    2. ...
+
+round2_ahp_pairwise:
+  director_question: |
+    확정된 평가 기준:
+    {criteria_list}
+    
+    이제 기준 간 상대적 중요도를 평가합니다.
+    
+    질문: "{criterion_a}" vs "{criterion_b}", 어느 기준이 더 중요한가요?
+    
+    사용자 정보:
+    {user_context}
+    
+    AHP 9점 척도를 사용하여 답변해주세요:
+    - 1: 두 기준이 동등하게 중요
+    - 2: A가 B보다 약간 더 중요 (1과 3 사이)
+    - 3: A가 B보다 조금 더 중요 (경험과 판단으로 약간 우위)
+    - 4: A가 B보다 더 중요 (3과 5 사이)
+    - 5: A가 B보다 중요 (경험과 판단으로 강한 우위)
+    - 6: A가 B보다 상당히 중요 (5와 7 사이)
+    - 7: A가 B보다 매우 중요 (실증적으로 강한 우위)
+    - 8: A가 B보다 극도로 중요 (7과 9 사이)
+    - 9: A가 B보다 절대적으로 중요 (가능한 최고 수준의 우위)
+    - 역수 (1/2, 1/3, ..., 1/9): B가 A보다 중요한 경우
+    
+    중간값(2, 4, 6, 8)을 적극 활용하여 미묘한 차이를 표현하세요.
+    
+    응답 형식:
+    - 비교값: [1-9 또는 역수]
+    - 근거: [왜 그 값을 선택했는지 3-5문장으로 구체적으로 설명]
+
+  agent_response_format: |
+    - 비교값: 
+    - 근거:
+
+  director_consensus: |
+    "{criterion_a}" vs "{criterion_b}" 비교 결과:
+    
+    {agent_responses}
+    
+    사용자 가중치:
+    - ValueAgent: {value_weight}0%
+    - FitAgent: {fit_weight}0%
+    - MarketAgent: {market_weight}0%
+    
+    위 응답들을 종합하여 최종 쌍대비교 값을 결정해주세요.
+    
+    응답 형식:
+    [합의 근거]
+    - 각 에이전트의 주요 의견
+    - 사용자 가중치 반영 방식
+    - 최종값 결정 논리
+    
+    [최종 확정값]
+    (1-9 또는 역수)
+
+round3_scoring:
+  director_question: |
+    확정된 평가 기준과 가중치:
+    {criteria_with_weights}
+    
+    이제 각 전공을 기준별로 평가합니다.
+    
+    질문: "{major}"의 "{criterion}" 점수는?
+    
+    사용자 정보:
+    {user_context}
+    
+    9점 척도 (0-9점)를 사용하여 평가해주세요:
+    - 0: 전혀 해당 없음 / 최하
+    - 1: 매우 낮음 / 거의 해당 없음
+    - 2: 낮음 / 부분적으로만 해당 (1과 3 사이)
+    - 3: 다소 낮음 / 평균 이하
+    - 4: 보통보다 약간 낮음 (3과 5 사이)
+    - 5: 보통 / 중간 수준
+    - 6: 보통보다 약간 높음 (5와 7 사이)
+    - 7: 높음 / 평균 이상
+    - 8: 매우 높음 / 상당히 우수 (7과 9 사이)
+    - 9: 최고 수준 / 완벽하게 해당
+    
+    소수점 사용도 가능합니다 (예: 6.5, 7.2 등).
+    중간값을 적극 활용하여 세밀하게 평가하세요.
+    
+    {criterion_description}
+    (유형: {criterion_type})
+    
+    응답 형식:
+    - 점수: [0-9, 소수점 가능]
+    - 근거: [왜 그 점수를 주었는지 3-5문장으로 구체적으로 설명]
+
+  agent_response_format: |
+    - 점수: 
+    - 근거:
+
+  director_consensus: |
+    "{major}"의 "{criterion}" 평가 결과:
+    
+    {agent_responses}
+    
+    사용자 가중치:
+    - ValueAgent: {value_weight}%
+    - FitAgent: {fit_weight}%
+    - MarketAgent: {market_weight}%
+    
+    위 응답들을 종합하여 최종 점수를 결정해주세요 (0-9점, 소수점 가능).
+    
+    응답 형식:
+    [합의 근거]
+    - 각 에이전트의 주요 의견
+    - 사용자 가중치 반영 방식
+    - 최종 점수 결정 논리
+    
+    [최종 확정값]
+    (0-9점)
+
+round4_topsis:
+  description: |
+    TOPSIS 알고리즘을 utils/topsis_calculator.py에서 구현합니다.

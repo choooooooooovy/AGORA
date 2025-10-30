@@ -1,0 +1,47 @@
+{
+  "mbti": "ENFP",
+  "strengths": [
+    "창의적 사고",
+    "팀워크",
+    "문제 해결 능력"
+  ],
+  "weaknesses": [
+    "집중력 부족",
+    "계획성 부족"
+  ],
+  "favorite_subjects": [
+    "디자인",
+    "수학"
+  ],
+  "disliked_subjects": [
+    "물리",
+    "화학"
+  ],
+  "good_at_subjects": [
+    "수학",
+    "디자인",
+    "영어"
+  ],
+  "bad_at_subjects": [
+    "물리",
+    "체육"
+  ],
+  "core_values": [
+    "적성 일치",
+    "높은 급여",
+    "미래 전망",
+    "워라밸",
+    "사회적 기여"
+  ],
+  "candidate_majors": [
+    "컴퓨터공학",
+    "산업디자인",
+    "경영학"
+  ],
+  "settings": {
+    "max_criteria": 5,
+    "cr_threshold": 0.10,
+    "cr_max_retries": 3,
+    "enable_streaming": false
+  }
+}
