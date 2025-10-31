@@ -1,8 +1,11 @@
-"""Round 1: 평가 기준 제안 및 선정"""
+"""Round 1: 평가 기준 토론 (13-turn Debate System)"""
 
 import yaml
-from typing import Dict, Any
+from typing import Dict, Any, List
 from pathlib import Path
+from datetime import datetime
+from langchain_openai import ChatOpenAI
+from langchain.schema import HumanMessage, SystemMessage
 
 
 def load_prompts() -> Dict[str, Any]:
@@ -12,261 +15,390 @@ def load_prompts() -> Dict[str, Any]:
         return yaml.safe_load(f)
 
 
-def agent_propose_criteria(state: Dict[str, Any]) -> Dict[str, Any]:
+def run_round1_debate(state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    각 에이전트가 순차적으로 평가 기준 제안 (대화형)
-    이전 에이전트들의 발언을 보고 반응
+    Round 1 토론 시스템 메인 함수 (13턴 구조)
+    
+    Phase 1-3: 각 Agent 주도권 (4턴씩)
+      - Turn 1: Agent A proposal
+      - Turn 2: Agent B question to A
+      - Turn 3: Agent C question to A  
+      - Turn 4: Agent A answer to B&C
+      ... (Agent B, C도 동일)
+    
+    Phase 4: Director 최종 결정 (1턴)
     
     Args:
         state: ConversationState
         
     Returns:
-        업데이트된 state
+        업데이트된 state with round1_debate_turns
     """
-    from agents import ValueAgent, FitAgent, MarketAgent
+    # 페르소나 확인
+    personas = state.get('agent_personas', [])
+    if not personas or len(personas) != 3:
+        raise ValueError("agent_personas must have exactly 3 personas")
     
-    # 프롬프트 로드
-    prompts = load_prompts()
-    round1_prompts = prompts['round1_criteria_generation']
+    # 초기화
+    debate_turns = []
     
-    # 이미 제안이 완료된 경우 스킵
-    proposals = state.get('round1_proposals', [])
-    if len(proposals) >= 3:
-        return state
-    
-    # 에이전트 순서 정의
-    agent_order = [
-        ('ValueAgent', state.get('value_agent')),
-        ('FitAgent', state.get('fit_agent')),
-        ('MarketAgent', state.get('market_agent'))
-    ]
-    
-    # 현재 턴의 에이전트 선택
-    current_turn = len(proposals)
-    agent_name, agent = agent_order[current_turn]
-    
-    if agent is None:
-        return state
-    
-    # Context 준비
-    user_context_data = state['user_input'].get('context', {})
-    context = {
-        'personality': user_context_data.get('personality'),
-        'learning_style': user_context_data.get('learning_style'),
-        'evaluation_style': user_context_data.get('evaluation_style'),
-        'preferred_subjects': user_context_data.get('preferred_subjects', []),
-        'disliked_subjects': user_context_data.get('disliked_subjects', []),
-        'self_ability': user_context_data.get('self_ability', {}),
-        'evidence': user_context_data.get('evidence', {}),
-        'alternatives': state['alternatives']
-    }
-    
-    user_context = f"""
-- 성격: {context.get('personality', 'N/A')}
-- 학습 스타일: {context.get('learning_style', 'N/A')}
-- 평가 스타일: {context.get('evaluation_style', 'N/A')}
-- 선호 과목: {', '.join(context.get('preferred_subjects', []))}
-- 능력: {context.get('self_ability', {})}
-"""
-    
-    majors_str = ', '.join(state['alternatives'])
-    
-    # 기본 질문 프롬프트
-    base_question = round1_prompts['director_question'].format(
-        user_context=user_context,
-        majors=majors_str
-    )
-    
-    # 대화 히스토리 추가 (이전 에이전트들의 발언)
-    conversation_history = ""
-    if proposals:
-        conversation_history = "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        conversation_history += "[이전 대화 내용]\n"
-        conversation_history += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+    # Phase 1-3: 각 Agent 주도권
+    for phase_idx, lead_agent in enumerate(personas, 1):
+        other_agents = [p for p in personas if p['name'] != lead_agent['name']]
         
-        for i, prev_proposal in enumerate(proposals, 1):
-            conversation_history += f"[Turn {i} - {prev_proposal['agent_name']}]\n"
-            conversation_history += f"{prev_proposal['criteria']}\n\n"
+        # Turn 1: Lead agent proposal
+        proposal_turn = _agent_propose(state, lead_agent, len(debate_turns) + 1, phase_idx)
+        debate_turns.append(proposal_turn)
         
-        conversation_history += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        # Turn 2-3: Other agents ask questions
+        for questioner in other_agents:
+            question_turn = _agent_question(
+                state, questioner, lead_agent, 
+                len(debate_turns) + 1, phase_idx, debate_turns
+            )
+            debate_turns.append(question_turn)
         
-        # 강제 대화형 프롬프트 (명시적 응답 요구)
-        conversation_history += f"당신은 {agent_name}입니다. 위 동료들의 의견에 대한 응답으로 다음 형식을 **반드시** 따라 작성하세요:\n\n"
-        conversation_history += "### 이전 의견에 대한 응답\n"
-        conversation_history += "(동료들이 제안한 기준 중 동의하는 부분과 그 이유를 먼저 언급하세요)\n\n"
-        conversation_history += "### 제 의견\n"
-        conversation_history += "(당신의 전문 분야 관점에서 추가로 필요한 기준을 제안하거나, 동료 의견에 대한 보완/반박 의견을 제시하세요)\n\n"
-        conversation_history += "**중요:** 반드시 위 동료들의 구체적인 제안을 언급하며 응답해야 합니다. 독립적인 발언만 하지 마세요.\n"
+        # Turn 4: Lead agent answers
+        answer_turn = _agent_answer(
+            state, lead_agent, other_agents,
+            len(debate_turns) + 1, phase_idx, debate_turns
+        )
+        debate_turns.append(answer_turn)
     
-    # 최종 질문 (대화 히스토리 포함)
-    final_question = base_question + conversation_history
-    
-    # 현재 에이전트 응답 생성
-    response = agent.respond(context, final_question)
-    
-    # 제안 추가
-    proposals.append({
-        'agent_name': agent_name,
-        'criteria': response
-    })
+    # Phase 4: Director final decision
+    director_turn = _director_final_decision(state, personas, debate_turns)
+    debate_turns.append(director_turn)
     
     # State 업데이트
-    state['round1_proposals'] = proposals
-    state['conversation_turns'] += 1
+    state['round1_debate_turns'] = debate_turns
+    state['selected_criteria'] = director_turn.get('selected_criteria', [])
+    state['round1_director_decision'] = director_turn
     
     return state
+
+
+# Helper functions will be added next
+def agent_propose_criteria(state: Dict[str, Any]) -> Dict[str, Any]:
+    """레거시 함수 - 새로운 토론 시스템으로 리다이렉트"""
+    return run_round1_debate(state)
 
 
 def director_select_criteria(state: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    DirectorAgent가 최종 평가 기준 선정
+    """레거시 함수 - run_round1_debate가 이미 처리함"""
+    if state.get('round1_debate_turns'):
+        return state
+    return run_round1_debate(state)
+
+
+def _agent_propose(
+    state: Dict[str, Any],
+    agent: Dict[str, Any],
+    turn: int,
+    phase: int
+) -> Dict[str, Any]:
+    """Agent가 평가 기준 제안"""
+    llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
+    user_input = state['user_input']
+    majors = state['alternatives']
+    system_prompt = agent['system_prompt']
     
-    Args:
-        state: ConversationState
-        
-    Returns:
-        업데이트된 state
-    """
-    from agents import DirectorAgent
-    from utils.conversation_builder import build_director_consensus_prompt
-    from datetime import datetime
+    user_prompt = f"""
+당신은 '{agent['name']}'입니다.
+핵심 가치: {', '.join(agent['core_values'])}
+입장: {agent['debate_stance']}
+
+사용자 정보:
+- MBTI: {user_input.get('mbti', 'N/A')}
+- 강점: {', '.join(user_input.get('strengths', []))}
+- 약점: {', '.join(user_input.get('weaknesses', []))}
+- 선호 과목: {', '.join(user_input.get('favorite_subjects', []))}
+- 비선호 과목: {', '.join(user_input.get('disliked_subjects', []))}
+- 핵심 가치관: {', '.join(user_input.get('core_values', []))}
+
+고려 대상 전공: {', '.join(majors)}
+
+**당신의 차례입니다. 당신의 핵심 가치에 기반한 평가 기준을 제안하세요.**
+
+다음 형식으로 답변하세요:
+---
+제안 기준: [기준 이름]
+
+설명: [왜 이 기준이 중요한지 200자 이상 설명]
+
+측정 방법: [이 기준을 어떻게 평가할 것인지]
+
+---
+"""
     
-    # 프롬프트 로드
-    prompts = load_prompts()
-    director_prompt = prompts['round1_criteria_generation']['director_consensus']
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    response = llm.invoke(messages)
     
-    # DirectorAgent
-    director = state.get('director_agent')
-    if director is None:
-        raise ValueError("DirectorAgent not initialized")
+    return {
+        "turn": turn,
+        "phase": f"Phase {phase}: {agent['name']} 주도권",
+        "speaker": agent['name'],
+        "type": "proposal",
+        "target": None,
+        "content": response.content,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+def _agent_question(
+    state: Dict[str, Any],
+    questioner: Dict[str, Any],
+    target_agent: Dict[str, Any],
+    turn: int,
+    phase: int,
+    debate_history: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """Agent가 다른 Agent에게 질문"""
+    llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
     
-    # 모든 제안을 대화 형식으로 변환
-    conversation = []
-    for idx, proposal in enumerate(state['round1_proposals'], 1):
-        conversation.append({
-            'turn': idx,
-            'agent_name': proposal['agent_name'],
-            'response': proposal['criteria'],
-            'timestamp': datetime.now().isoformat()
-        })
+    # 가장 최근 proposal 찾기
+    latest_proposal = None
+    for turn_data in reversed(debate_history):
+        if turn_data['type'] == 'proposal' and turn_data['speaker'] == target_agent['name']:
+            latest_proposal = turn_data
+            break
     
-    # Director용 프롬프트 생성
-    question_context = f"최대 {state.get('max_criteria', 5)}개의 평가 기준 선정"
-    director_full_prompt = build_director_consensus_prompt(
-        conversation=conversation,
-        question_context=question_context,
-        round_type='criteria'
-    )
+    if not latest_proposal:
+        raise ValueError(f"No proposal found from {target_agent['name']}")
     
-    # 기존 프롬프트와 결합 (호환성 유지)
-    max_criteria = state.get('max_criteria', 5)
-    agent_config = state['user_input'].get('agent_config', {})
+    system_prompt = questioner['system_prompt']
+    user_prompt = f"""
+당신은 '{questioner['name']}'입니다.
+핵심 가치: {', '.join(questioner['core_values'])}
+입장: {questioner['debate_stance']}
+
+방금 '{target_agent['name']}'가 다음과 같이 제안했습니다:
+---
+{latest_proposal['content']}
+---
+
+**당신의 관점에서 이 제안에 대해 날카로운 질문을 하세요.**
+
+질문 작성 가이드:
+- 당신의 핵심 가치와 충돌하는 부분을 지적
+- 구체적인 사례를 요구
+- 다른 대안적 관점 제시
+
+100-150자 분량으로 작성하세요.
+"""
     
-    all_proposals = "\n\n".join([
-        f"[{p['agent_name']}]\n{p['criteria']}"
-        for p in state['round1_proposals']
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    response = llm.invoke(messages)
+    
+    return {
+        "turn": turn,
+        "phase": f"Phase {phase}: {target_agent['name']} 주도권",
+        "speaker": questioner['name'],
+        "type": "question",
+        "target": target_agent['name'],
+        "content": response.content,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+def _agent_answer(
+    state: Dict[str, Any],
+    answerer: Dict[str, Any],
+    questioners: List[Dict[str, Any]],
+    turn: int,
+    phase: int,
+    debate_history: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """Agent가 받은 질문들에 답변"""
+    llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
+    
+    # 이번 phase에서 받은 질문들 찾기
+    questions_received = []
+    for turn_data in debate_history:
+        if (turn_data['type'] == 'question' and 
+            turn_data['target'] == answerer['name'] and
+            f"Phase {phase}" in turn_data['phase']):
+            questions_received.append(turn_data)
+    
+    if not questions_received:
+        raise ValueError(f"No questions found for {answerer['name']} in Phase {phase}")
+    
+    system_prompt = answerer['system_prompt']
+    questions_text = "\n\n".join([
+        f"[{q['speaker']}의 질문]\n{q['content']}" 
+        for q in questions_received
     ])
     
-    formatted_prompt = director_prompt.format(
-        all_proposals=all_proposals,
-        max_criteria=max_criteria,
-        value_weight=agent_config.get('value_weight', 0),
-        fit_weight=agent_config.get('fit_weight', 0),
-        market_weight=agent_config.get('market_weight', 0)
-    )
+    user_prompt = f"""
+당신은 '{answerer['name']}'입니다.
+핵심 가치: {', '.join(answerer['core_values'])}
+
+동료들이 당신의 제안에 대해 다음과 같은 질문을 했습니다:
+
+{questions_text}
+
+**각 질문에 대해 명확하고 설득력 있게 답변하세요.**
+
+답변 가이드:
+- 각 질문자를 언급하며 답변
+- 당신의 핵심 가치를 재강조
+- 구체적인 근거와 사례 제시
+- 200-300자 분량
+
+다음 형식으로 답변하세요:
+---
+[질문자 이름]님께:
+[답변 내용]
+
+[질문자 이름]님께:
+[답변 내용]
+---
+"""
     
-    # Director 프롬프트 결합
-    final_prompt = director_full_prompt + "\n\n" + formatted_prompt
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    response = llm.invoke(messages)
     
-    # Context 준비
-    context = {
-        'agent_config': agent_config,
-        'alternatives': state['alternatives']
+    return {
+        "turn": turn,
+        "phase": f"Phase {phase}: {answerer['name']} 주도권",
+        "speaker": answerer['name'],
+        "type": "answer",
+        "target": [q['name'] for q in questioners],
+        "content": response.content,
+        "timestamp": datetime.now().isoformat()
     }
-    
-    # DirectorAgent 응답 생성
-    response = director.respond(
-        context=context,
-        round_prompt=final_prompt,
-        agent_responses=state['round1_proposals']
-    )
-    
-    print(f"\n[DEBUG] DirectorAgent 응답 길이: {len(response)}")
-    print(f"[DEBUG] 응답 시작: {response[:200]}...")
-    
-    # 응답에서 기준 파싱
-    selected_criteria = parse_criteria_from_response(response)
-    
-    # DirectorDecision 생성 (명확한 구조)
-    director_decision = {
-        'turn': len(conversation) + 1,
-        'agent_name': 'DirectorAgent',
-        'response': response,
-        'selected_criteria': selected_criteria,
-        'max_criteria': max_criteria,
-        'timestamp': datetime.now().isoformat()
-    }
-    
-    # State 업데이트 - 명확하게 저장
-    state['selected_criteria'] = selected_criteria
-    state['round1_director_decision'] = director_decision
-    
-    # 검증 로그
-    print(f"[DEBUG] round1_director_decision 설정 완료")
-    print(f"[DEBUG] response 길이: {len(director_decision.get('response', ''))}")
-    print(f"[DEBUG] selected_criteria 개수: {len(selected_criteria)}")
-    print(f"[DEBUG] state에 저장된 키들: {list(state.keys())}")
-    
-    state['conversation_turns'] += 1
-    
-    return state
 
 
-def parse_criteria_from_response(response: str) -> list:
-    """
-    DirectorAgent 응답에서 선정된 기준 파싱
+def _director_final_decision(
+    state: Dict[str, Any],
+    personas: List[Dict[str, Any]],
+    debate_history: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """Director가 토론 내용을 바탕으로 최종 기준 선정"""
+    llm = ChatOpenAI(model="gpt-4o", temperature=0.0)
     
-    Args:
-        response: DirectorAgent의 응답 텍스트
-        
-    Returns:
-        선정된 기준 리스트 (기준명만)
-        ['취업 전망', '개인 적성', '급여 수준', ...]
-    """
+    # 토론 전체 내용 정리
+    debate_summary = "\n\n".join([
+        f"[Turn {t['turn']} - {t['speaker']} ({t['type']})]" + 
+        (f" → {t['target']}" if t.get('target') else "") +
+        f"\n{t['content']}"
+        for t in debate_history
+    ])
+    
+    max_criteria = state.get('max_criteria', 5)
+    
+    system_prompt = """당신은 공정하고 객관적인 중재자입니다. 
+세 명의 전문가가 토론한 내용을 종합하여 최종 평가 기준을 선정해야 합니다.
+각 전문가의 관점을 균형있게 반영하되, 사용자에게 가장 도움이 되는 기준을 선택하세요."""
+    
+    user_prompt = f"""
+다음은 전공 선택을 위한 평가 기준에 대한 12턴의 토론 내용입니다:
+
+{debate_summary}
+
+---
+
+**임무: 위 토론 내용을 바탕으로 최종 {max_criteria}개의 평가 기준을 선정하세요.**
+
+선정 원칙:
+1. 세 전문가의 핵심 가치를 골고루 반영
+2. 측정 가능하고 구체적인 기준
+3. 사용자의 전공 선택에 실질적 도움이 되는 기준
+4. 중복되지 않는 독립적인 기준
+
+다음 JSON 형식으로 답변하세요:
+```json
+{{
+  "selected_criteria": [
+    {{
+      "name": "기준 이름",
+      "description": "기준 설명 (200자 이상)",
+      "type": "benefit",
+      "source_agent": "제안한 Agent 이름",
+      "reasoning": "이 기준을 선정한 이유"
+    }}
+  ],
+  "summary": "최종 결정에 대한 종합 설명 (300자 이상)"
+}}
+```
+
+**중요: 반드시 정확한 JSON 형식으로만 답변하세요. 다른 텍스트는 포함하지 마세요.**
+"""
+    
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    response = llm.invoke(messages)
+    content = response.content
+    
+    # JSON 파싱
+    import json
     import re
     
-    criteria = []
+    # ```json 블록 제거
+    if '```json' in content:
+        content = re.sub(r'^```json\s*', '', content, flags=re.MULTILINE)
+        content = re.sub(r'\s*```$', '', content, flags=re.MULTILINE)
+    elif '```' in content:
+        content = re.sub(r'^```\s*', '', content, flags=re.MULTILINE)
+        content = re.sub(r'\s*```$', '', content, flags=re.MULTILINE)
     
-    # 패턴 1: "1. [기준명] (유형: benefit/cost) - ..." 형식
-    pattern1 = r'\d+\.\s*\[([^\]]+)\]\s*\(유형:\s*(benefit|cost)\)'
-    matches1 = re.findall(pattern1, response, re.IGNORECASE)
+    try:
+        decision_data = json.loads(content.strip())
+    except json.JSONDecodeError as e:
+        print(f"JSON 파싱 실패: {e}")
+        print(f"응답 내용:\n{content}")
+        raise
     
-    if matches1:
-        for name, _ in matches1:
-            criteria.append(name.strip())
-        return criteria
+    return {
+        "turn": len(debate_history) + 1,
+        "phase": "Phase 4: Director 최종 결정",
+        "speaker": "Director",
+        "type": "final_decision",
+        "target": None,
+        "content": content,
+        "selected_criteria": decision_data.get('selected_criteria', []),
+        "summary": decision_data.get('summary', ''),
+        "timestamp": datetime.now().isoformat()
+    }
+    user_input = state['user_input']
+    majors = state['alternatives']
+    system_prompt = agent['system_prompt']
     
-    # 패턴 2: "1. 기준명 (benefit/cost): ..." 형식
-    pattern2 = r'\d+\.\s*([^(]+?)\s*\((benefit|cost)\)'
-    matches2 = re.findall(pattern2, response, re.IGNORECASE)
+    user_prompt = f"""
+당신은 '{agent['name']}'입니다.
+핵심 가치: {', '.join(agent['core_values'])}
+입장: {agent['debate_stance']}
+
+사용자 정보:
+- MBTI: {user_input.get('mbti', 'N/A')}
+- 강점: {', '.join(user_input.get('strengths', []))}
+- 약점: {', '.join(user_input.get('weaknesses', []))}
+- 선호 과목: {', '.join(user_input.get('favorite_subjects', []))}
+- 비선호 과목: {', '.join(user_input.get('disliked_subjects', []))}
+- 핵심 가치관: {', '.join(user_input.get('core_values', []))}
+
+고려 대상 전공: {', '.join(majors)}
+
+**당신의 차례입니다. 당신의 핵심 가치에 기반한 평가 기준을 제안하세요.**
+
+다음 형식으로 답변하세요:
+---
+제안 기준: [기준 이름]
+
+설명: [왜 이 기준이 중요한지 200자 이상 설명]
+
+측정 방법: [이 기준을 어떻게 평가할 것인지]
+
+---
+"""
     
-    if matches2:
-        for name, _ in matches2:
-            criteria.append(name.strip())
-        return criteria
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    response = llm.invoke(messages)
     
-    # 패턴 3: 단순히 번호 매겨진 목록 "1. 기준명"
-    pattern3 = r'\d+\.\s*([^\n:]+)'
-    matches3 = re.findall(pattern3, response)
-    
-    if matches3:
-        # 괄호나 콜론 전까지만 추출
-        for match in matches3[:5]:  # 최대 5개
-            name = match.split('(')[0].split(':')[0].strip()
-            if name and len(name) < 50:  # 너무 긴 문장 제외
-                criteria.append(name)
-        return criteria
-    
-    return criteria
-    
-    return criteria
+    return {
+        "turn": turn,
+        "phase": f"Phase {phase}: {agent['name']} 주도권",
+        "speaker": agent['name'],
+        "type": "proposal",
+        "target": None,
+        "content": response.content,
+        "timestamp": datetime.now().isoformat()
+    }
