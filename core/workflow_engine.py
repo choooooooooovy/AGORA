@@ -197,7 +197,7 @@ class WorkflowEngine:
         Returns:
             초기화된 ConversationState
         """
-        # ✅ 동적 페르소나 생성
+        # 동적 페르소나 생성
         from core.persona_generator import create_dynamic_personas
         
         print(f"\n[Workflow] 페르소나 생성 중...")
@@ -222,7 +222,7 @@ class WorkflowEngine:
             'user_input': user_input,
             'alternatives': user_input.get('alternatives', []),
             
-            # ✅ 동적 생성된 페르소나
+            # 동적 생성된 페르소나
             'agent_personas': agent_personas,
             
             # 에이전트 인스턴스 (기존 유지 - Round 2-4에서 아직 사용 중)
@@ -241,7 +241,7 @@ class WorkflowEngine:
             
             # 결과 저장소 초기화
             'round1_proposals': [],
-            'round1_debate_turns': None,  # ✅ 토론 시스템 결과 저장
+            'round1_debate_turns': None,  # 토론 시스템 결과 저장
             'round2_comparisons': {},
             'round2_director_decisions': {},
             'round3_scores': {},

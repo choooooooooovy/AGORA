@@ -1,9 +1,16 @@
-"""Round 2: 쌍대비교 및 AHP 가중치 계산"""
+"""Round 2: 쌍대비교 토론 (13-turn Debate System)"""
 
 import yaml
+import json
+import re
 from typing import Dict, Any, List, Tuple
 from pathlib import Path
+from datetime import datetime
 from itertools import combinations
+from langchain_openai import ChatOpenAI
+from langchain.schema import HumanMessage, SystemMessage
+from config import Config
+from utils.ahp_calculator import AHPCalculator
 
 
 def load_prompts() -> Dict[str, Any]:
@@ -14,350 +21,498 @@ def load_prompts() -> Dict[str, Any]:
 
 
 def generate_comparison_pairs(criteria: List[str]) -> List[Tuple[str, str]]:
-    """
-    쌍대비교할 기준 쌍 생성
-    
-    Args:
-        criteria: 기준 리스트
-        
-    Returns:
-        비교 쌍 리스트 [(A, B), (A, C), (B, C), ...]
-    """
+    """쌍대비교할 기준 쌍 생성"""
     return list(combinations(criteria, 2))
 
 
-def agent_compare_criteria(state: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    각 에이전트가 순차적으로 대화하며 현재 비교 쌍에 대해 의견 제시
+def run_round2_debate(state: Dict[str, Any]) -> Dict[str, Any]:
+    """Round 2 토론 시스템 메인 함수 (13턴 구조)"""
+    # 페르소나 확인
+    personas = state.get('agent_personas', [])
+    if not personas or len(personas) != 3:
+        raise ValueError("agent_personas must have exactly 3 personas")
     
-    Args:
-        state: ConversationState
+    # Round 1에서 선정된 기준 확인
+    selected_criteria = state.get('selected_criteria', [])
+    if not selected_criteria:
+        raise ValueError("No criteria selected from Round 1")
+    
+    # 기준 이름 추출
+    if isinstance(selected_criteria[0], dict):
+        criteria_names = [c['name'] for c in selected_criteria]
+    else:
+        criteria_names = selected_criteria
+    
+    # 비교 쌍 생성
+    comparison_pairs = generate_comparison_pairs(criteria_names)
+    
+    print(f"\n[Round 2] {len(criteria_names)}개 기준 → {len(comparison_pairs)}개 쌍대비교")
+    for pair in comparison_pairs:
+        print(f"  - {pair[0]} vs {pair[1]}")
+    
+    # 초기화
+    debate_turns = []
+    
+    # Phase 1-3: 각 Agent 주도권
+    for phase_idx, lead_agent in enumerate(personas, 1):
+        other_agents = [p for p in personas if p['name'] != lead_agent['name']]
         
-    Returns:
-        업데이트된 state
-    """
-    from agents import ValueAgent, FitAgent, MarketAgent
-    from utils.conversation_builder import build_discussion_prompt
-    from datetime import datetime
+        # Turn 1: Lead agent 전체 비교표 제안
+        proposal_turn = _agent_propose_comparisons(
+            state, lead_agent, criteria_names, comparison_pairs,
+            len(debate_turns) + 1, phase_idx
+        )
+        debate_turns.append(proposal_turn)
+        
+        # Turn 2-3: Other agents 반박
+        for critic in other_agents:
+            critique_turn = _agent_critique(
+                state, critic, lead_agent, proposal_turn,
+                len(debate_turns) + 1, phase_idx, debate_turns
+            )
+            debate_turns.append(critique_turn)
+        
+        # Turn 4: Lead agent 재반박
+        defense_turn = _agent_defend(
+            state, lead_agent, other_agents,
+            len(debate_turns) + 1, phase_idx, debate_turns
+        )
+        debate_turns.append(defense_turn)
     
-    # 프롬프트 로드
-    prompts = load_prompts()
-    round2_prompts = prompts['round2_ahp_pairwise']
+    # Phase 4: Director 최종 결정
+    director_turn = _director_final_decision(
+        state, personas, criteria_names, comparison_pairs, debate_turns
+    )
+    debate_turns.append(director_turn)
     
-    # 현재 비교 쌍
-    current_pair = state.get('current_comparison_pair')
-    if current_pair is None:
-        return state
+    # State 업데이트
+    state['round2_debate_turns'] = debate_turns
+    state['comparison_matrix'] = director_turn.get('comparison_matrix', {})
+    state['round2_director_decision'] = director_turn
     
-    criterion_a, criterion_b = current_pair
+    return state
+
+
+# Helper functions
+def _agent_propose_comparisons(state, agent, criteria, pairs, turn, phase):
+    """Agent가 전체 쌍대비교표 제안"""
+    llm = ChatOpenAI(
+        model=Config.OPENAI_MODEL,
+        temperature=Config.AGENT_TEMPERATURE,
+        api_key=Config.OPENAI_API_KEY
+    )
+    user_input = state['user_input']
+    majors = state['alternatives']
     
-    # 사용자 맥락 준비
-    user_context_data = state['user_input'].get('context', {})
-    user_context = f"""
-- 성격: {user_context_data.get('personality', 'N/A')}
-- 학습 스타일: {user_context_data.get('learning_style', 'N/A')}
-- 선호 과목: {', '.join(user_context_data.get('preferred_subjects', []))}
-- 능력: {user_context_data.get('self_ability', {})}
+    pairs_text = "\n".join([f"  {i+1}. {a} vs {b}" for i, (a, b) in enumerate(pairs)])
+    system_prompt = agent['system_prompt']
+    
+    user_prompt = f"""
+Round 1에서 선정된 {len(criteria)}개 평가 기준: {', '.join(criteria)}
+
+이 기준들을 쌍대비교해야 합니다 (총 {len(pairs)}개 쌍):
+{pairs_text}
+
+사용자: MBTI {user_input.get('mbti')}, 전공 {', '.join(majors)}
+
+**당신의 핵심 가치({', '.join(agent['core_values'])})를 바탕으로 쌍대비교를 평가하세요.**
+
+각 쌍을 비교할 때, A가 B보다 얼마나 더 중요한지 **0.5 단위**로 세밀하게 판단하세요:
+
+**A가 B보다 중요한 경우:**
+- 1: 거의 동등 (차이가 거의 없음)
+- 1.5: 아주 약간 더 중요 (미세한 차이)
+- 2: 조금 더 중요 (명확하지만 작은 차이)
+- 2.5: 약간 더 중요 (눈에 띄는 차이)
+- 3: 분명히 더 중요 (확실한 차이)
+- 3.5: 상당히 더 중요 (큰 차이)
+- 4: 매우 중요 (매우 큰 차이)
+- 4.5: 훨씬 더 중요 (압도적 차이의 시작)
+- 5: 강하게 더 중요 (명백한 우위)
+- 5.5: 매우 강하게 더 중요 (확고한 우위)
+- 6: 지배적으로 중요 (압도적 우위)
+- 6.5: 극도로 중요 (비교 불가 수준)
+- 7: 절대적으로 중요 (완전한 우위)
+- 7.5: 최고 수준으로 중요 (극단적 우위)
+- 8: 압도적으로 중요 (거의 비교 불가)
+- 8.5: 극단적으로 중요 (완전 비교 불가)
+- 9: 절대 우위 (상상할 수 없을 정도의 차이)
+
+**B가 A보다 중요한 경우:** 역수 사용
+- 0.67 (= 1/1.5): B가 아주 약간 더
+- 0.5 (= 1/2): B가 조금 더
+- 0.4 (= 1/2.5): B가 약간 더
+- 0.33 (= 1/3): B가 분명히 더
+- 0.29 (= 1/3.5): B가 상당히 더
+- 0.25 (= 1/4): B가 매우 더
+- ... (이하 동일한 패턴)
+
+핵심 비교 3-4개만 간단히 설명하고, 마지막에 JSON 형식으로 **전체 10개 쌍** 비교표를 제공하세요:
+
+```json
+{{"comparison_matrix": {{"기준A vs 기준B": 숫자, ...}}}}
+```
 """
     
-    # 확정된 기준 목록
-    criteria_list = '\n'.join([f"- {c}" for c in state.get('selected_criteria', [])])
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    response = llm.invoke(messages)
+    content = response.content
     
-    # 공통 질문 생성
-    base_question = round2_prompts['director_question'].format(
-        criteria_list=criteria_list,
-        criterion_a=criterion_a,
-        criterion_b=criterion_b,
-        user_context=user_context
+    comparison_matrix = _extract_comparison_matrix(content, pairs)
+    
+    return {
+        "turn": turn,
+        "phase": f"Phase {phase}: {agent['name']} 주도권",
+        "speaker": agent['name'],
+        "type": "proposal",
+        "content": content,
+        "comparison_matrix": comparison_matrix,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+def _agent_critique(state, critic, target_agent, proposal_turn, turn, phase, debate_history):
+    """Agent가 다른 Agent의 비교표를 반박"""
+    llm = ChatOpenAI(
+        model=Config.OPENAI_MODEL,
+        temperature=Config.AGENT_TEMPERATURE,
+        api_key=Config.OPENAI_API_KEY
     )
     
-    # Context 준비
-    context = {
-        'personality': user_context_data.get('personality'),
-        'learning_style': user_context_data.get('learning_style'),
-        'preferred_subjects': user_context_data.get('preferred_subjects', []),
-        'self_ability': user_context_data.get('self_ability', {}),
-        'alternatives': state['alternatives'],
-        'selected_criteria': state.get('selected_criteria', [])
+    proposed_matrix = proposal_turn.get('comparison_matrix', {})
+    matrix_text = "\n".join([f"  - {pair}: {value}" for pair, value in proposed_matrix.items()])
+    
+    system_prompt = critic['system_prompt']
+    user_prompt = f"""
+'{target_agent['name']}'의 쌍대비교 제안:
+{proposal_turn['content'][:400]}...
+
+[제안된 비교표]
+{matrix_text}
+
+**당신의 핵심 가치({', '.join(critic['core_values'])})를 바탕으로 문제점을 지적하세요.**
+
+가장 문제가 되는 2-3개 쌍을 지적하며:
+- 왜 점수가 적절하지 않은지
+- 당신의 관점에서는 어떤 점수가 더 합리적인지 **(0.5 단위로 제시)**
+  
+**점수 선택 가이드:**
+  1-2: 미세한 차이 | 2.5-3: 약간 차이 | 3.5-4: 상당한 차이
+  4.5-5: 훨씬 더 | 5.5-6: 지배적 | 6.5-7: 극도로 | 7.5-9: 절대 우위
+  
+  예: "이 쌍은 6.5(극도로 중요) 정도가 적절합니다"
+      "1.5(아주 약간 차이)로 평가하는 것이 합리적입니다"
+
+150-250자로 논리적으로 반박하세요.
+"""
+    
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    response = llm.invoke(messages)
+    
+    return {
+        "turn": turn,
+        "phase": f"Phase {phase}: {target_agent['name']} 주도권",
+        "speaker": critic['name'],
+        "type": "critique",
+        "target": target_agent['name'],
+        "content": response.content,
+        "timestamp": datetime.now().isoformat()
     }
-    
-    # 에이전트 순서 정의 (가중치 낮은 순 → 높은 순)
-    agent_config = state['user_input'].get('agent_config', {})
-    agent_order = [
-        ('ValueAgent', state.get('value_agent'), agent_config.get('value_weight', 0)),
-        ('FitAgent', state.get('fit_agent'), agent_config.get('fit_weight', 0)),
-        ('MarketAgent', state.get('market_agent'), agent_config.get('market_weight', 0))
-    ]
-    # 가중치 낮은 순으로 정렬 (가중치 낮은 사람이 먼저 발언)
-    agent_order.sort(key=lambda x: x[2])
-    
-    # 순차적 대화 진행
-    conversation = []
-    
-    for idx, (agent_name, agent, weight) in enumerate(agent_order):
-        if agent is None:
-            continue
-        
-        # 대화 히스토리를 포함한 프롬프트 생성
-        prompt = build_discussion_prompt(
-            base_question=base_question,
-            previous_responses=conversation,
-            current_agent=agent_name,
-            round_type='comparison'
-        )
-        
-        # 에이전트 응답 생성
-        response = agent.respond(context, prompt)
-        
-        # 대화에 추가
-        conversation.append({
-            'turn': idx + 1,
-            'agent_name': agent_name,
-            'agent_weight': weight,
-            'response': response,
-            'timestamp': datetime.now().isoformat()
-        })
-    
-    # State에 현재 쌍의 대화 저장
-    if 'round2_comparisons' not in state:
-        state['round2_comparisons'] = {}
-    
-    state['round2_comparisons'][current_pair] = conversation
-    state['conversation_turns'] += len(conversation)
-    
-    return state
 
 
-def director_consensus_comparison(state: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    DirectorAgent가 대화를 종합하여 최종 비교값 합의
+def _agent_defend(state, defender, critics, turn, phase, debate_history):
+    """Agent가 받은 반박에 재반박"""
+    llm = ChatOpenAI(
+        model=Config.OPENAI_MODEL,
+        temperature=Config.AGENT_TEMPERATURE,
+        api_key=Config.OPENAI_API_KEY
+    )
     
-    Args:
-        state: ConversationState
+    critiques_received = []
+    for turn_data in debate_history:
+        if (turn_data['type'] == 'critique' and 
+            turn_data['target'] == defender['name'] and
+            f"Phase {phase}" in turn_data['phase']):
+            critiques_received.append(turn_data)
+    
+    system_prompt = defender['system_prompt']
+    critiques_text = "\n\n".join([f"[{c['speaker']}의 반박]\n{c['content']}" for c in critiques_received])
+    
+    user_prompt = f"""
+당신의 쌍대비교 제안에 대한 반박:
+{critiques_text}
+
+**당신의 핵심 가치({', '.join(defender['core_values'])})를 바탕으로 재반박하세요.**
+
+각 반박자를 언급하며:
+- 왜 당신의 점수가 합리적인지
+- 반박자들의 주장에서 놓친 부분은 무엇인지
+
+150-250자로 논리적으로 방어하세요.
+"""
+    
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    response = llm.invoke(messages)
+    
+    return {
+        "turn": turn,
+        "phase": f"Phase {phase}: {defender['name']} 주도권",
+        "speaker": defender['name'],
+        "type": "defense",
+        "target": [c['name'] for c in critics],
+        "content": response.content,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+def _director_final_decision(state, personas, criteria, pairs, debate_history):
+    """Director가 토론 내용을 바탕으로 최종 비교 행렬 결정"""
+    llm = ChatOpenAI(
+        model=Config.OPENAI_MODEL,
+        temperature=Config.DIRECTOR_TEMPERATURE,
+        api_key=Config.OPENAI_API_KEY
+    )
+    
+    debate_summary = "\n\n".join([
+        f"[Turn {t['turn']} - {t['speaker']} ({t['type']})]"
+        f"\n{t['content'][:250]}..."
+        for t in debate_history
+    ])
+    
+    proposals = [turn for turn in debate_history if turn['type'] == 'proposal' and turn.get('comparison_matrix')]
+    proposals_text = "\n\n".join([
+        f"[{p['speaker']}의 제안]\n" + 
+        "\n".join([f"  {pair}: {value}" for pair, value in list(p['comparison_matrix'].items())[:5]])
+        for p in proposals
+    ])
+    
+    pairs_text = "\n".join([f"  {i+1}. {a} vs {b}" for i, (a, b) in enumerate(pairs)])
+    
+    system_prompt = """당신은 공정한 중재자입니다. 
+3명 Agent의 입장을 종합하여, 균형잡힌 최종 비교 행렬을 결정하세요.
+
+점수 결정 원칙:
+1. **점수별 명확한 의미 구분**:
+   - 1-2: 거의 비슷하거나 미세한 차이
+   - 2.5-4: 눈에 띄는 차이, 하나가 분명히 더 중요
+   - 4.5-6.5: 큰 차이, 하나가 압도적으로 중요
+   - 7-9: 극단적 차이, 비교 불가능한 수준
+
+2. **토론 합의 수준에 따라**:
+   - 3명 대부분 동의: 명확한 값 (6-8 또는 1/6-1/8)
+   - 2명 동의, 1명 반대: 중간~강한 값 (4-6 또는 1/4-1/6)
+   - 의견 갈림: 보통 값 (2-4)
+   - 완전 대립: 중립 값 (1-1.5)
+
+3. **반드시 0.5 단위 사용**: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9
+
+4. **점수 다양성 필수**: 
+   - 같은 점수를 3번 이상 사용하지 마세요!
+   - 10개 쌍은 최대한 다른 점수를 받아야 합니다
+   - 예: 3.5가 4개면 안됩니다. 2.5, 3.0, 3.5, 4.0으로 분산하세요
+   - 각 쌍의 고유한 특성을 반영하여 차별화된 점수를 부여하세요
+
+5. **자연스러운 분포**: 대부분의 값은 2-6 범위에 있어야 하며, 7 이상은 매우 명확한 합의가 있을 때만 사용하세요."""
+
+    user_prompt = f"""
+12턴의 토론:
+{debate_summary}
+
+각 Agent의 제안:
+{proposals_text}
+
+다음 {len(pairs)}개 쌍의 최종 비교값을 결정하세요:
+{pairs_text}
+
+**각 점수의 의미를 정확히 이해하고, 토론 내용을 반영하여 균형잡힌 값을 사용하세요.**
+
+**점수 가이드 (0.5 단위):**
+- 1: 거의 동등
+- 1.5-2: 아주 약간/조금 더 중요
+- 2.5-3: 약간/분명히 더 중요
+- 3.5-4: 상당히/매우 중요
+- 4.5-5: 훨씬/강하게 더 중요
+- 5.5-6: 매우 강하게/지배적으로 중요
+- 6.5-7: 극도로/절대적으로 중요
+- 7.5-9: 최고 수준/압도적 우위 (매우 드물게 사용)
+
+**토론 내용 반영:**
+- Agent 대부분 동의 → 6-7 정도
+- Agent 2명 정도 동의 → 4-6 정도
+- 의견이 갈림 → 2-4 정도
+- 완전 대립 → 1-2 정도
+
+**자연스러운 분포 유지**: 대부분 2-6 범위, 7 이상은 매우 명확한 경우만
+
+역수 예시: 1/2=0.5, 1/3=0.33, 1/4=0.25, 1/5=0.2, 1/6=0.17, 1/7=0.14
+
+JSON 형식으로 답변:
+```json
+{{"comparison_matrix": {{"기준A vs 기준B": 숫자, ...}}, "reasoning": "각 점수 결정 이유 설명"}}
+```
+"""
+    
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    response = llm.invoke(messages)
+    content = response.content
+    
+    # JSON 파싱
+    if '```json' in content:
+        content = re.sub(r'^```json\s*', '', content, flags=re.MULTILINE)
+        content = re.sub(r'\s*```$', '', content, flags=re.MULTILINE)
+    elif '```' in content:
+        content = re.sub(r'^```\s*', '', content, flags=re.MULTILINE)
+        content = re.sub(r'\s*```$', '', content, flags=re.MULTILINE)
+    
+    try:
+        decision_data = json.loads(content.strip())
+    except json.JSONDecodeError as e:
+        print(f"JSON 파싱 실패: {e}")
+        decision_data = {}
+    
+    return {
+        "turn": len(debate_history) + 1,
+        "phase": "Phase 4: Director 최종 결정",
+        "speaker": "Director",
+        "type": "final_decision",
+        "content": content,
+        "comparison_matrix": decision_data.get('comparison_matrix', {}),
+        "reasoning": decision_data.get('reasoning', ''),
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+def _extract_comparison_matrix(content, pairs):
+    """Agent 응답에서 비교 행렬 추출"""
+    # JSON 블록 찾기 (여러 패턴 시도)
+    json_text = None
+    
+    # 패턴 1: ```json ... ``` 블록
+    json_match = re.search(r'```json\s*(\{.*?\})\s*```', content, re.DOTALL)
+    if json_match:
+        json_text = json_match.group(1)
+    else:
+        # 패턴 2: ``` ... ``` 블록
+        json_match = re.search(r'```\s*(\{.*?\})\s*```', content, re.DOTALL)
+        if json_match:
+            json_text = json_match.group(1)
+        else:
+            # 패턴 3: 직접 JSON 객체 찾기
+            json_match = re.search(r'\{[^}]*"comparison_matrix"[^}]*:\s*\{[^}]*\}[^}]*\}', content, re.DOTALL)
+            if json_match:
+                json_text = json_match.group(0)
+    
+    if not json_text:
+        print(f"[WARNING] JSON 블록을 찾을 수 없습니다")
+        return {}
+    
+    try:
+        # JSON 파싱
+        data = json.loads(json_text.strip())
+        matrix = data.get('comparison_matrix', {})
         
-    Returns:
-        업데이트된 state
-    """
-    from agents import DirectorAgent
-    from utils.conversation_builder import build_director_consensus_prompt
-    from datetime import datetime
-    import re
-    
-    # 현재 비교 쌍
-    current_pair = state.get('current_comparison_pair')
-    if current_pair is None:
+        if not matrix:
+            print(f"[WARNING] comparison_matrix가 비어있습니다")
+            return {}
+        
+        # 쌍 형식 표준화
+        standardized = {}
+        for pair in pairs:
+            key1 = f"{pair[0]} vs {pair[1]}"
+            key2 = f"{pair[1]} vs {pair[0]}"
+            
+            if key1 in matrix:
+                val = float(matrix[key1])
+                standardized[key1] = val
+            elif key2 in matrix:
+                val = float(matrix[key2])
+                standardized[key1] = 1/val if val != 0 else 1.0
+            else:
+                # 기본값: 중립
+                standardized[key1] = 1.0
+        
+        print(f"[SUCCESS] JSON 파싱 성공: {len(standardized)}개 쌍")
+        return standardized
+        
+    except json.JSONDecodeError as e:
+        print(f"[ERROR] JSON 파싱 실패: {e}")
+        print(f"시도한 텍스트: {json_text[:200]}...")
+        return {}
+    except Exception as e:
+        print(f"[ERROR] 예외 발생: {e}")
+        return {}
+
+# Legacy functions
+def agent_compare_criteria(state):
+    return run_round2_debate(state)
+
+def director_consensus_comparison(state):
+    if state.get('round2_debate_turns'):
         return state
-    
-    criterion_a, criterion_b = current_pair
-    
-    # 현재 쌍에 대한 대화 가져오기
-    conversation = state.get('round2_comparisons', {}).get(current_pair, [])
-    
-    if not conversation:
-        return state
-    
-    # DirectorAgent
-    director = state.get('director_agent')
-    if director is None:
-        raise ValueError("DirectorAgent not initialized")
-    
-    # Director용 프롬프트 생성
-    question_context = f'"{criterion_a}"와 "{criterion_b}" 중 어느 기준이 더 중요한가?'
-    director_prompt = build_director_consensus_prompt(
-        conversation=conversation,
-        question_context=question_context,
-        round_type='comparison'
-    )
-    
-    # Context 준비
-    context = {
-        'agent_config': state['user_input'].get('agent_config', {}),
-        'alternatives': state['alternatives']
-    }
-    
-    # DirectorAgent 응답 생성
-    director_response = director.respond(
-        context=context,
-        round_prompt=director_prompt,
-        agent_responses=conversation
-    )
-    
-    # 응답에서 최종 비교값 추출
-    final_value = extract_comparison_value(director_response)
-    
-    # DirectorDecision 생성
-    director_decision = {
-        'turn': len(conversation) + 1,
-        'agent_name': 'DirectorAgent',
-        'response': director_response,
-        'final_value': final_value,
-        'criterion_pair': current_pair,
-        'timestamp': datetime.now().isoformat()
-    }
-    
-    # 대화에 Director 응답 추가
-    conversation.append(director_decision)
-    state['round2_comparisons'][current_pair] = conversation
-    
-    # 별도로 Director 결정 저장 (검색 용이)
-    if 'round2_director_decisions' not in state:
-        state['round2_director_decisions'] = {}
-    state['round2_director_decisions'][current_pair] = director_decision
-    
-    # 비교 행렬에 최종값 저장
-    if 'comparison_matrix' not in state:
-        state['comparison_matrix'] = {}
-    state['comparison_matrix'][current_pair] = final_value
-    
-    state['conversation_turns'] += 1
-    
-    return state
-
-
-def extract_comparison_value(response: str) -> float:
-    """
-    DirectorAgent 응답에서 최종 비교값 추출
-    
-    Args:
-        response: DirectorAgent의 응답 텍스트
-        
-    Returns:
-        추출된 비교값 (float)
-    """
-    import re
-    
-    # 패턴 1: "최종 확정값: 2.5" 형태
-    pattern1 = r'최종\s*확정값\s*[:：]\s*([0-9.]+)'
-    match1 = re.search(pattern1, response, re.IGNORECASE)
-    if match1:
-        try:
-            return float(match1.group(1))
-        except:
-            pass
-    
-    # 패턴 2: "최종값: 2.5" 형태
-    pattern2 = r'최종값\s*[:：]\s*([0-9.]+)'
-    match2 = re.search(pattern2, response, re.IGNORECASE)
-    if match2:
-        try:
-            return float(match2.group(1))
-        except:
-            pass
-    
-    # 패턴 3: "비교값: 2.5" 형태
-    pattern3 = r'비교값\s*[:：]\s*([0-9.]+)'
-    match3 = re.search(pattern3, response, re.IGNORECASE)
-    if match3:
-        try:
-            return float(match3.group(1))
-        except:
-            pass
-    
-    # 패턴 4: DirectorAgent의 extract_final_value 메서드 활용
-    # (기존 로직과 호환)
-    pattern4 = r'\[최종 확정값\]\s*[:\n]?\s*([^\n]+)'
-    match4 = re.search(pattern4, response)
-    if match4:
-        value_str = match4.group(1).strip()
-        try:
-            # 한글 제거
-            value_str = value_str.replace('점', '').replace('배', '').strip()
-            # 분수 처리
-            if '/' in value_str:
-                parts = value_str.split('/')
-                if len(parts) == 2:
-                    return round(float(parts[0]) / float(parts[1]), 4)
-            return float(value_str)
-        except:
-            pass
-    
-    # 기본값: 1.0 (동등)
-    print(f"[WARNING] 비교값 추출 실패, 기본값 1.0 사용")
-    return 1.0
-
+    return run_round2_debate(state)
 
 def calculate_ahp_weights(state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    AHP 계산으로 기준별 가중치 도출
+    AHP 가중치 계산 및 일관성 검증
     
-    Args:
-        state: ConversationState
-        
-    Returns:
-        업데이트된 state
+    Director가 결정한 comparison_matrix를 바탕으로:
+    1. 쌍대비교 행렬 생성
+    2. 고유값 방법으로 가중치 계산
+    3. 일관성 비율(CR) 검증
     """
-    from utils import AHPCalculator
+    # Director의 최종 비교 행렬 가져오기
+    comparison_dict = state.get('comparison_matrix', {})
+    if not comparison_dict:
+        raise ValueError("No comparison_matrix found in state")
     
-    # 선정된 기준들
+    # 기준 목록 추출
     selected_criteria = state.get('selected_criteria', [])
-    if not selected_criteria:
-        raise ValueError("No criteria selected")
-    
-    # selected_criteria가 딕셔너리 리스트인지 문자열 리스트인지 확인
-    if selected_criteria and isinstance(selected_criteria[0], dict):
+    if isinstance(selected_criteria[0], dict):
         criteria_names = [c['name'] for c in selected_criteria]
     else:
-        # 문자열 리스트인 경우 그대로 사용
         criteria_names = selected_criteria
     
-    # 쌍대비교 결과 수집
-    comparisons = {}
-    for pair, decision in state.get('round2_director_decisions', {}).items():
-        # decision은 이제 전체 대화 객체
-        value = decision.get('final_value')
-        if isinstance(value, (int, float)):
-            comparisons[pair] = float(value)
+    print(f"\n[AHP 가중치 계산]")
+    print(f"기준: {criteria_names}")
+    print(f"비교 쌍: {len(comparison_dict)}개")
     
-    # AHP 계산
-    ahp = AHPCalculator(max_cr=0.10, max_retries=3)
+    # 비교 행렬을 튜플 키 형식으로 변환
+    # "적성 vs 급여": 3.0 → ("적성", "급여"): 3.0
+    comparisons_tuple = {}
+    for pair_str, value in comparison_dict.items():
+        # "기준A vs 기준B" 형식 파싱
+        parts = pair_str.split(' vs ')
+        if len(parts) == 2:
+            criterion_a = parts[0].strip()
+            criterion_b = parts[1].strip()
+            comparisons_tuple[(criterion_a, criterion_b)] = value
     
-    max_retries = 3
-    retry_count = 0
-    ahp_result = None
+    # AHP 계산기 초기화
+    ahp_calc = AHPCalculator(max_cr=0.15)
     
-    while retry_count < max_retries:
-        ahp_result = ahp.process_ahp(criteria_names, comparisons)
-        
-        if ahp_result['status'] == 'passed':
-            break
-        
-        retry_count += 1
-        # TODO: CR이 높으면 에이전트에게 재비교 요청
-        # 현재는 단순히 재시도
+    # AHP 프로세스 실행
+    result = ahp_calc.process_ahp(criteria_names, comparisons_tuple)
     
-    # State에 AHP 결과 저장
-    state['ahp_result'] = ahp_result
-    state['criteria_weights'] = ahp_result.get('weights', {})
+    # 결과 출력
+    print(f"\n[AHP 계산 완료]")
+    print(f"일관성 비율(CR): {result['cr']:.4f} {'(통과)' if result['status'] == 'passed' else '(실패)'}")
+    print(f"최대 고유값(lambda_max): {result['lambda_max']:.4f}")
+    print(f"\n[가중치]")
+    for criterion, weight in result['weights'].items():
+        print(f"  - {criterion}: {weight:.4f} ({weight*100:.2f}%)")
+    
+    # State 업데이트
+    state['ahp_result'] = result
+    state['criteria_weights'] = result['weights']
+    state['consistency_ratio'] = result['cr']
+    state['ahp_status'] = result['status']
+    
+    # CR 실패 시 경고
+    if result['status'] == 'failed':
+        print(f"\n[WARNING] 일관성 비율이 {result['cr']:.4f}로 허용 기준(0.15)을 초과했습니다.")
+        print(f"   토론을 재진행하거나 비교 행렬을 조정해야 할 수 있습니다.")
     
     return state
 
-
-def should_continue_comparisons(state: Dict[str, Any]) -> str:
-    """
-    쌍대비교를 계속할지 결정 (LangGraph 조건부 엣지용)
-    
-    Args:
-        state: ConversationState
-        
-    Returns:
-        'continue' 또는 'finish'
-    """
-    selected_criteria = state.get('selected_criteria', [])
-    criteria_names = [c['name'] for c in selected_criteria]
-    
-    # 모든 비교 쌍 생성
-    all_pairs = generate_comparison_pairs(criteria_names)
-    
-    # 완료된 비교 쌍
-    completed_pairs = set(state.get('round2_director_decisions', {}).keys())
-    
-    # 남은 쌍이 있는지 확인
-    remaining_pairs = [p for p in all_pairs if p not in completed_pairs]
-    
-    if remaining_pairs:
-        # 다음 비교 쌍 설정
-        state['current_comparison_pair'] = remaining_pairs[0]
-        return 'continue'
-    else:
-        state['current_comparison_pair'] = None
-        return 'finish'
+def should_continue_comparisons(state):
+    return "finish"

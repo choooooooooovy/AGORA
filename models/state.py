@@ -63,7 +63,7 @@ class ConversationState(TypedDict):
     user_input: Dict[str, Any]
     alternatives: List[str]
     
-    # ✅ 동적 생성된 Agent 페르소나 (LLM이 생성)
+    # Agent 페르소나 (동적 생성)
     agent_personas: Optional[List[Dict[str, Any]]]
     # Format: [
     #   {
@@ -99,7 +99,7 @@ class ConversationState(TypedDict):
     # Round 1: Criteria generation
     round1_proposals: List[Dict[str, Any]]  # All proposals from agents
     
-    # ✅ Round 1 구조화 토론 (12턴 + Director 1턴)
+    # Round 1 구조화 토론 (13-turn structure)
     round1_debate_turns: Optional[List[Dict[str, Any]]]
     # Format: [
     #   {

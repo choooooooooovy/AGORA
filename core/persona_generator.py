@@ -244,7 +244,7 @@ if __name__ == "__main__":
     import sys
     sys.path.append('/Users/orca/Desktop/Prioritization')
     
-    # ✅ .env 파일 명시적 로드
+    # .env 파일 명시적 로드
     from dotenv import load_dotenv
     load_dotenv()
     

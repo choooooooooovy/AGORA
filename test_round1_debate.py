@@ -17,7 +17,7 @@ with open('data/user_inputs/sample_template_new.json', 'r', encoding='utf-8') as
 user_input = UserInput(**test_data)
 
 print("=" * 80)
-print("🎯 Round 1 토론 시스템 테스트 시작")
+print("[TEST] Round 1 토론 시스템 테스트 시작")
 print("=" * 80)
 
 # WorkflowEngine 초기화
@@ -39,25 +39,24 @@ try:
     final_state = run_round1_debate(initial_state)
     
     print("\n" + "=" * 80)
-    print("✅ Round 1 완료!")
-    print("=" * 80)
+    print("[Round 1 완료]")
     
-    # 결과 출력
-    debate_turns = final_state.get('round1_debate_turns', [])
-    print(f"\n총 {len(debate_turns)}개 턴 완료\n")
+    # 디버그: 전체 state 키 출력
+    print("\n[State Keys]", list(final_state.keys()))
     
-    for turn in debate_turns:
-        print(f"[Turn {turn['turn']}] {turn['phase']}")
-        print(f"Speaker: {turn['speaker']} ({turn['type']})")
-        if turn.get('target'):
-            print(f"Target: {turn['target']}")
-        print(f"\n{turn['content'][:200]}...\n")
-        print("-" * 80)
+    # 디버그: debate_turns 구조 확인
+    if 'round1_debate_turns' in final_state:
+        print(f"[Debate Turns] {len(final_state['round1_debate_turns'])}개 턴")
+        for i, turn in enumerate(final_state['round1_debate_turns'][:3], 1):
+            print(f"  Turn {i}: {turn.get('speaker', 'Unknown')} - {turn.get('type', 'Unknown')}")
     
-    # Director 최종 결정
-    print("\n" + "=" * 80)
-    print("📋 최종 선정된 평가 기준:")
-    print("=" * 80)
+    # 선정된 기준 확인
+    if 'selected_criteria' in final_state:
+        print(f"\n[Selected Criteria] {len(final_state['selected_criteria'])}개")
+    else:
+        print("\n[WARNING] selected_criteria가 state에 없습니다!")
+    
+    print("\n[최종 선정된 평가 기준]")
     
     selected_criteria = final_state.get('selected_criteria', [])
     for idx, criterion in enumerate(selected_criteria, 1):
@@ -75,15 +74,17 @@ try:
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump({
             'session_id': session_id,
+            'user_input': final_state.get('user_input', {}),
+            'alternatives': final_state.get('alternatives', []),
             'agent_personas': final_state['agent_personas'],
-            'debate_turns': debate_turns,
+            'round1_debate_turns': final_state.get('round1_debate_turns', []),
             'selected_criteria': selected_criteria,
-            'director_decision': final_state.get('round1_director_decision', {})
+            'round1_director_decision': final_state.get('round1_director_decision', {})
         }, f, ensure_ascii=False, indent=2)
     
-    print(f"\n✅ 결과 저장: {output_file}")
+    print(f"\n[SAVE] 결과 저장: {output_file}")
     
 except Exception as e:
-    print(f"\n❌ 오류 발생: {e}")
+    print(f"\n[ERROR] 오류 발생: {e}")
     import traceback
     traceback.print_exc()
