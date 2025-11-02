@@ -10,8 +10,9 @@ from .round2_ahp import (
     calculate_ahp_weights
 )
 from .round3_scoring import (
+    run_round3_debate,
     agent_score_alternative,
-    director_consensus_score
+    director_final_scoring
 )
 from .round4_topsis import (
     calculate_topsis_ranking
@@ -28,8 +29,9 @@ __all__ = [
     'calculate_ahp_weights',
     
     # Round 3
+    'run_round3_debate',
     'agent_score_alternative',
-    'director_consensus_score',
+    'director_final_scoring',
     
     # Round 4
     'calculate_topsis_ranking'

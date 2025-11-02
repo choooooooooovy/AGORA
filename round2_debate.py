@@ -1,15 +1,15 @@
-"""Round 2 Debate System Test"""
+"""Round 2 Debate System"""
 
 import json
 from pathlib import Path
 from workflows.round2_ahp import run_round2_debate, calculate_ahp_weights
 
-def test_round2():
-    """Round 2 토론 테스트"""
+def run_round2():
+    """Round 2 토론 실행"""
     
-    # Round 1 결과 로드 (가장 최근 파일)
+    # Round 1 결과 로드 (가장 최근 파일 - 생성 시간 기준)
     output_dir = Path("output")
-    round1_files = sorted(output_dir.glob("round1_test_*.json"))
+    round1_files = sorted(output_dir.glob("round1_*.json"), key=lambda x: x.stat().st_mtime)
     
     if not round1_files:
         print("[ERROR] Round 1 결과 파일이 없습니다. 먼저 Round 1을 실행하세요.")
@@ -84,7 +84,7 @@ def test_round2():
         
         # 결과 저장
         session_id = latest_round1.stem.split('_')[-1]
-        output_file = output_dir / f"round2_test_{session_id}.json"
+        output_file = output_dir / f"round2_{session_id}.json"
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(result_state, f, ensure_ascii=False, indent=2)
         
@@ -106,4 +106,4 @@ def test_round2():
 
 
 if __name__ == "__main__":
-    test_round2()
+    run_round2()

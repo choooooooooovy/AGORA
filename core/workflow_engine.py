@@ -5,19 +5,18 @@ import uuid
 from typing import Dict, Any, Optional
 from langgraph.graph import StateGraph, END
 from models.state import ConversationState
-from core.agent_factory import AgentFactory
 from workflows import (
     agent_propose_criteria,
     director_select_criteria,
     agent_compare_criteria,
     director_consensus_comparison,
     calculate_ahp_weights,
+    run_round3_debate,
     agent_score_alternative,
-    director_consensus_score,
+    director_final_scoring,
     calculate_topsis_ranking
 )
 from workflows.round2_ahp import should_continue_comparisons, generate_comparison_pairs
-from workflows.round3_scoring import should_continue_scoring
 
 
 class WorkflowEngine:
@@ -44,9 +43,6 @@ class WorkflowEngine:
         self.director_temperature = director_temperature
         self.max_criteria = max_criteria
         
-        # 에이전트 팩토리
-        self.agent_factory = AgentFactory(model_name=model_name)
-        
         # StateGraph 생성
         self.graph = self._build_graph()
     
@@ -71,7 +67,7 @@ class WorkflowEngine:
         
         # ========== Round 3: 점수 부여 ==========
         workflow.add_node("score_alternative", self._score_alternative_wrapper)
-        workflow.add_node("consensus_score", director_consensus_score)
+        workflow.add_node("consensus_score", director_final_scoring)
         
         # ========== Round 4: TOPSIS 순위 ==========
         workflow.add_node("calculate_ranking", calculate_topsis_ranking)
@@ -99,16 +95,9 @@ class WorkflowEngine:
         # Round 2 → Round 3 (첫 번째 점수 항목 설정)
         workflow.add_edge("calculate_ahp", "score_alternative")
         
-        # Round 3 루프
+        # Round 3: 한 번에 전체 Decision Matrix 생성
         workflow.add_edge("score_alternative", "consensus_score")
-        workflow.add_conditional_edges(
-            "consensus_score",
-            should_continue_scoring,
-            {
-                "continue": "score_alternative",  # 다음 항목 점수 부여
-                "finish": "calculate_ranking"     # TOPSIS 계산
-            }
-        )
+        workflow.add_edge("consensus_score", "calculate_ranking")
         
         # Round 4 → 종료
         workflow.add_edge("calculate_ranking", END)
@@ -206,12 +195,6 @@ class WorkflowEngine:
         for persona in agent_personas:
             print(f"  - {persona['name']}: {', '.join(persona['core_values'])}")
         
-        # 에이전트 생성 (기존 Agent 클래스는 유지 - 추후 제거 예정)
-        agents = self.agent_factory.create_all_agents(
-            agent_temperature=self.agent_temperature,
-            director_temperature=self.director_temperature
-        )
-        
         # 초기 상태 구성
         state = {
             # 세션 정보
@@ -220,16 +203,10 @@ class WorkflowEngine:
             
             # 사용자 입력
             'user_input': user_input,
-            'alternatives': user_input.get('alternatives', []),
+            'alternatives': user_input.get('candidate_majors', user_input.get('alternatives', [])),
             
             # 동적 생성된 페르소나
             'agent_personas': agent_personas,
-            
-            # 에이전트 인스턴스 (기존 유지 - Round 2-4에서 아직 사용 중)
-            'value_agent': agents['value_agent'],
-            'fit_agent': agents['fit_agent'],
-            'market_agent': agents['market_agent'],
-            'director_agent': agents['director_agent'],
             
             # 설정
             'max_criteria': self.max_criteria,
@@ -452,18 +429,11 @@ class WorkflowEngine:
         # Round 3만을 위한 그래프 생성
         workflow = StateGraph(ConversationState)
         workflow.add_node("score_alternative", self._score_alternative_wrapper)
-        workflow.add_node("consensus_score", director_consensus_score)
+        workflow.add_node("consensus_score", director_final_scoring)
         
         workflow.set_entry_point("score_alternative")
         workflow.add_edge("score_alternative", "consensus_score")
-        workflow.add_conditional_edges(
-            "consensus_score",
-            should_continue_scoring,
-            {
-                "continue": "score_alternative",
-                "finish": END
-            }
-        )
+        workflow.add_edge("consensus_score", END)
         
         graph = workflow.compile()
         
@@ -515,28 +485,17 @@ class WorkflowEngine:
     
     def _restore_state_for_round2(self, prev_state: Dict[str, Any]) -> Dict[str, Any]:
         """Round 2를 위한 상태 복원"""
-        # 에이전트 재생성
-        agents = self.agent_factory.create_all_agents(
-            agent_temperature=self.agent_temperature,
-            director_temperature=self.director_temperature
-        )
-        
         # Round 2에 필요한 필드 복원
         state = {
             'session_id': prev_state.get('session_id'),
             'user_input': prev_state.get('user_input'),
             'alternatives': prev_state.get('alternatives'),
             'selected_criteria': prev_state.get('selected_criteria', []),
+            'agent_personas': prev_state.get('agent_personas', []),
             'round1_proposals': prev_state.get('round1_proposals', []),
             'round1_director_decision': prev_state.get('round1_director_decision', {}),
             'conversation_turns': prev_state.get('conversation_turns', 0),
             'max_criteria': self.max_criteria,
-            
-            # 에이전트 인스턴스
-            'value_agent': agents['value_agent'],
-            'fit_agent': agents['fit_agent'],
-            'market_agent': agents['market_agent'],
-            'director_agent': agents['director_agent'],
             
             # Round 2 초기화
             'round2_comparisons': {},
@@ -551,12 +510,6 @@ class WorkflowEngine:
     
     def _restore_state_for_round3(self, prev_state: Dict[str, Any]) -> Dict[str, Any]:
         """Round 3를 위한 상태 복원"""
-        # 에이전트 재생성
-        agents = self.agent_factory.create_all_agents(
-            agent_temperature=self.agent_temperature,
-            director_temperature=self.director_temperature
-        )
-        
         # tuple 키를 가진 딕셔너리 복원
         round2_comparisons = {}
         for key, value in prev_state.get('round2_comparisons', {}).items():
@@ -580,6 +533,7 @@ class WorkflowEngine:
             'user_input': prev_state.get('user_input'),
             'alternatives': prev_state.get('alternatives'),
             'selected_criteria': prev_state.get('selected_criteria', []),
+            'agent_personas': prev_state.get('agent_personas', []),
             'criteria_weights': prev_state.get('criteria_weights', {}),
             'consistency_ratio': prev_state.get('consistency_ratio'),
             'conversation_turns': prev_state.get('conversation_turns', 0),
@@ -590,12 +544,6 @@ class WorkflowEngine:
             'round1_director_decision': prev_state.get('round1_director_decision', {}),
             'round2_comparisons': round2_comparisons,
             'round2_director_decisions': round2_director_decisions,
-            
-            # 에이전트 인스턴스
-            'value_agent': agents['value_agent'],
-            'fit_agent': agents['fit_agent'],
-            'market_agent': agents['market_agent'],
-            'director_agent': agents['director_agent'],
             
             # Round 3 초기화
             'round3_scores': {},

@@ -1,4 +1,4 @@
-"""Round 1 Debate System 테스트"""
+"""Round 1 Debate System"""
 
 import json
 import os
@@ -17,7 +17,7 @@ with open('data/user_inputs/sample_template_new.json', 'r', encoding='utf-8') as
 user_input = UserInput(**test_data)
 
 print("=" * 80)
-print("[TEST] Round 1 토론 시스템 테스트 시작")
+print("[Round 1] 토론 시스템 시작")
 print("=" * 80)
 
 # WorkflowEngine 초기화
@@ -69,12 +69,12 @@ try:
     os.makedirs(output_dir, exist_ok=True)
     
     session_id = final_state['session_id']
-    output_file = f"{output_dir}/round1_test_{session_id}.json"
+    output_file = f"{output_dir}/round1_{session_id}.json"
     
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump({
             'session_id': session_id,
-            'user_input': final_state.get('user_input', {}),
+            'user_input': test_data,  # 원본 user_input 저장
             'alternatives': final_state.get('alternatives', []),
             'agent_personas': final_state['agent_personas'],
             'round1_debate_turns': final_state.get('round1_debate_turns', []),
