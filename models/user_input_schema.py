@@ -57,8 +57,7 @@ class UserInput(BaseModel):
     candidate_majors: List[str] = Field(
         ...,
         min_length=3,
-        max_length=5,
-        description="Candidate majors to evaluate (3-5 majors)"
+        description="Candidate majors to evaluate (minimum 3 required)"
     )
     
     # 세션 설정
@@ -75,9 +74,9 @@ class UserInput(BaseModel):
     @field_validator('candidate_majors')
     @classmethod
     def validate_majors(cls, v):
-        """희망 학과는 3~5개"""
-        if len(v) < 3 or len(v) > 5:
-            raise ValueError("희망 학과는 3개 이상 5개 이하로 입력해주세요.")
+        """희망 학과는 최소 3개 이상"""
+        if len(v) < 3:
+            raise ValueError("희망 학과는 최소 3개 이상 입력해주세요.")
         return v
     
     class Config:

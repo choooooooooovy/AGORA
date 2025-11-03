@@ -261,8 +261,9 @@ if __name__ == "__main__":
     
     print(f"[OK] API 키 로드됨: {api_key[:10]}...")
     
-    # 샘플 데이터 로드
-    with open('/Users/orca/Desktop/Prioritization/data/user_inputs/sample_template_new.json') as f:
+    # 사용자 데이터 로드 (고정 경로)
+    USER_INPUT_PATH = 'data/user_inputs/current_user.json'
+    with open(USER_INPUT_PATH) as f:
         data = json.load(f)
     
     # 검증

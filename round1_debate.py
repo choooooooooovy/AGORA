@@ -9,8 +9,9 @@ from models.user_input_schema import UserInput
 # API 키 로드
 load_dotenv()
 
-# 테스트 데이터 로드
-with open('data/user_inputs/sample_template_new.json', 'r', encoding='utf-8') as f:
+# 사용자 데이터 로드 (고정 경로)
+USER_INPUT_PATH = 'data/user_inputs/current_user.json'
+with open(USER_INPUT_PATH, 'r', encoding='utf-8') as f:
     test_data = json.load(f)
 
 # UserInput 검증

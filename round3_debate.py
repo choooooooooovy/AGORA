@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from workflows.round3_scoring import run_round3_debate
 
+USER_INPUT_PATH = 'data/user_inputs/current_user.json'
+
 def run_round3():
     """Round 3 토론 실행"""
     

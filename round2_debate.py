@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from workflows.round2_ahp import run_round2_debate, calculate_ahp_weights
 
+USER_INPUT_PATH = 'data/user_inputs/current_user.json'
+
 def run_round2():
     """Round 2 토론 실행"""
     
