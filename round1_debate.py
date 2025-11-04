@@ -75,8 +75,8 @@ try:
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump({
             'session_id': session_id,
-            'user_input': test_data,  # 원본 user_input 저장
-            'alternatives': final_state.get('alternatives', []),
+            'user_input': test_data,  # 원본 user_input 저장 (candidate_majors 포함)
+            # 'alternatives' 제외: user_input.candidate_majors와 중복
             'agent_personas': final_state['agent_personas'],
             'round1_debate_turns': final_state.get('round1_debate_turns', []),
             'selected_criteria': selected_criteria,

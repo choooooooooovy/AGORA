@@ -15,18 +15,14 @@ def calculate_topsis_ranking(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     from utils import TOPSISCalculator
     
-    # 필요한 데이터 추출
-    alternatives = state.get('alternatives', [])
+    # 필요한 데이터 추출 (alternatives는 user_input에서)
+    alternatives = state.get('user_input', {}).get('candidate_majors', [])
     selected_criteria = state.get('selected_criteria', [])
     criteria_names = [c['name'] for c in selected_criteria]
     decision_matrix = state.get('decision_matrix', {})
     criteria_weights = state.get('criteria_weights', {})
     
-    # 기준 타입 추출 (benefit/cost)
-    criterion_types = {
-        c['name']: c.get('type', 'benefit')
-        for c in selected_criteria
-    }
+    # criterion_types 제거: 모든 기준은 benefit type (높을수록 좋음)
     
     # TOPSIS 계산
     topsis = TOPSISCalculator()
@@ -36,8 +32,8 @@ def calculate_topsis_ranking(state: Dict[str, Any]) -> Dict[str, Any]:
             alternatives=alternatives,
             criteria=criteria_names,
             scores=decision_matrix,
-            weights=criteria_weights,
-            criterion_types=criterion_types
+            weights=criteria_weights
+            # criterion_types 제거
         )
         
         # State에 결과 저장
@@ -71,9 +67,8 @@ def format_final_output(state: Dict[str, Any]) -> Dict[str, Any]:
         'timestamp': datetime.now().isoformat(),
         'status': state.get('status', 'unknown'),
         
-        # 입력 요약
+        # 입력 요약 (alternatives 제거, user_input.candidate_majors 사용)
         'user_weights': state['user_input'].get('agent_config', {}),
-        'alternatives': state.get('alternatives', []),
         
         # Round 1 결과
         'criteria': state.get('selected_criteria', []),

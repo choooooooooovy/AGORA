@@ -91,17 +91,14 @@ class TOPSISCalculator:
     
     def identify_ideal_solutions(
         self,
-        weighted_matrix: pd.DataFrame,
-        criterion_types: Dict[str, str]
+        weighted_matrix: pd.DataFrame
     ) -> Tuple[pd.Series, pd.Series]:
         """
         이상해/반이상해 식별
+        모든 기준은 benefit type (높을수록 좋음)으로 가정
         
         Args:
             weighted_matrix: 가중 정규화 행렬
-            criterion_types: 기준 타입 딕셔너리
-                - 'benefit': 클수록 좋음 (예: 취업률, 만족도)
-                - 'cost': 작을수록 좋음 (예: 학비, 난이도)
             
         Returns:
             (ideal_solution, anti_ideal_solution) 튜플
@@ -110,16 +107,9 @@ class TOPSISCalculator:
         anti_ideal = pd.Series(index=weighted_matrix.columns, dtype=float)
         
         for criterion in weighted_matrix.columns:
-            crit_type = criterion_types.get(criterion, 'benefit')
-            
-            if crit_type == 'benefit':
-                # benefit: 최댓값이 이상적, 최솟값이 부정적
-                ideal[criterion] = weighted_matrix[criterion].max()
-                anti_ideal[criterion] = weighted_matrix[criterion].min()
-            else:  # cost
-                # cost: 최솟값이 이상적, 최댓값이 부정적
-                ideal[criterion] = weighted_matrix[criterion].min()
-                anti_ideal[criterion] = weighted_matrix[criterion].max()
+            # 모든 기준은 benefit type: 최댓값이 이상적, 최솟값이 부정적
+            ideal[criterion] = weighted_matrix[criterion].max()
+            anti_ideal[criterion] = weighted_matrix[criterion].min()
         
         return ideal, anti_ideal
     
@@ -202,18 +192,17 @@ class TOPSISCalculator:
         alternatives: List[str],
         criteria: List[str],
         scores: Dict[str, Dict[str, float]],
-        weights: Dict[str, float],
-        criterion_types: Dict[str, str]
+        weights: Dict[str, float]
     ) -> Dict:
         """
         전체 TOPSIS 프로세스 실행
+        모든 기준은 benefit type (높을수록 좋음)으로 가정
         
         Args:
             alternatives: 대안 리스트
             criteria: 기준 리스트
             scores: 점수 딕셔너리
             weights: 기준별 가중치
-            criterion_types: 기준 타입 (benefit/cost)
             
         Returns:
             TOPSIS 결과 딕셔너리:
@@ -236,10 +225,8 @@ class TOPSISCalculator:
         # 3. 가중치 적용
         weighted_matrix = self.apply_weights(normalized_matrix, weights)
         
-        # 4. 이상적 해 식별
-        ideal, anti_ideal = self.identify_ideal_solutions(
-            weighted_matrix, criterion_types
-        )
+        # 4. 이상적 해 식별 (모든 기준은 benefit type)
+        ideal, anti_ideal = self.identify_ideal_solutions(weighted_matrix)
         
         # 5. 거리 계산
         dist_ideal, dist_anti_ideal = self.calculate_distances(

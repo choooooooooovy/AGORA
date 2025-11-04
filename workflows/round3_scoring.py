@@ -76,8 +76,8 @@ def run_round3_debate(state: Dict[str, Any]) -> Dict[str, Any]:
     else:
         criteria_names = selected_criteria
     
-    # 전공 목록
-    alternatives = state.get('alternatives', [])
+    # 전공 목록 (user_input에서 직접 가져오기)
+    alternatives = state.get('user_input', {}).get('candidate_majors', [])
     if not alternatives:
         raise ValueError("No alternatives provided")
     
@@ -151,8 +151,7 @@ def _agent_propose_matrix(state, agent, criteria_names, alternatives, turn, phas
     system_prompt = agent['system_prompt']
     
     user_prompt = f"""
-사용자 정보:
-- MBTI: {user_input.get('mbti', 'N/A')}
+사용자 특성:
 - 강점: {', '.join(user_input.get('strengths', []))}
 - 약점: {', '.join(user_input.get('weaknesses', []))}
 - 선호 과목: {', '.join(user_input.get('favorite_subjects', []))}
@@ -170,6 +169,12 @@ def _agent_propose_matrix(state, agent, criteria_names, alternatives, turn, phas
 
 **당신의 핵심 가치({', '.join(agent['core_values'])})를 바탕으로 평가하세요.**
 
+[중요 지침]
+1. 사용자의 MBTI 성향은 참고만 하되, 발언에서는 직접 언급하지 마세요.
+2. 대신 사용자의 구체적 특성(강점/약점/선호 과목)을 근거로 제시하세요.
+3. "~한 특성을 가진 사람에게는..." 형식으로 설명하세요.
+4. 각 전공이 **해당 기준**에서 어떤 특성을 요구하는지 객관적으로 평가하세요.
+
 **작성 형식:**
 
 1. **핵심 평가 2-3개 설명** (각 100-150자)
@@ -177,15 +182,15 @@ def _agent_propose_matrix(state, agent, criteria_names, alternatives, turn, phas
 각 설명은 다음 구조를 따르세요:
 
 **[전공명] - [기준명]: [점수]**
-근거: 사용자의 [구체적 특성]을 고려할 때, 이 전공은 [구체적 이유]하기 때문에 [점수]를 부여합니다.
+근거: [사용자의 특성]을 가진 사람에게 이 전공은 [기준 관점에서의 특성]하므로 [점수]를 부여합니다.
 
 **작성 예시:**
 
-**컴퓨터학부 - 적성 기반의 창의적 성과 가능성: 7.5**
-근거: 사용자는 ENFP로 창의적이고 새로운 것을 배우는 것을 좋아합니다. 컴퓨터학부는 끊임없이 새로운 기술을 학습하고 창의적인 문제 해결이 필요한 분야이므로, 사용자의 적성에 매우 탁월하게 부합합니다(7.5). 특히 프로그래밍 경험이 있어 시너지가 높습니다.
+**컴퓨터공학 - 학문적 깊이와 연구 기회: 7.5**
+근거: 논리적 분석과 체계적 사고가 강한 사람에게 컴퓨터공학은 알고리즘, 시스템 설계 등 깊이 있는 학문적 탐구가 가능한 분야입니다. 연구 기회도 풍부하여 7.5점이 적절합니다.
 
-**시각디자인학부 - 높은 급여와 워라밸의 조화: 4.5**
-근거: 디자인 분야는 프리랜서 비중이 높아 워라밸을 자율적으로 조절할 수 있지만, 초기 급여는 상대적으로 낮고 불안정합니다. 따라서 보통 이상 수준인 4.5점이 적절합니다.
+**산업디자인 - 안정성과 급여 잠재력: 5.0**
+근거: 디자인 분야는 프리랜서 비중이 높아 초기 급여가 불안정하지만, 경력이 쌓이면 안정화됩니다. 중간 수준인 5.0점이 적절합니다.
 
 ---
 
@@ -208,6 +213,7 @@ def _agent_propose_matrix(state, agent, criteria_names, alternatives, turn, phas
 
 **주의사항:**
 - 반드시 0.5 단위로만 점수 부여 (1.0, 1.5, 2.0, 2.5, ..., 9.0)
+````
 - 모든 전공 × 모든 기준 조합 필수 (빠짐없이)
 - 점수는 3-7점 범위가 대부분이어야 함
 """
@@ -261,29 +267,34 @@ def _agent_critique(state, critic, target_agent, proposal_turn, turn, phase, deb
 
 **당신의 핵심 가치({', '.join(critic['core_values'])})를 바탕으로 문제점을 지적하세요.**
 
+[중요 지침]
+1. 사용자의 MBTI 성향은 참고만 하되, 발언에서는 직접 언급하지 마세요.
+2. 대신 사용자의 구체적 특성(강점/약점)을 근거로 제시하세요.
+3. 각 전공이 **해당 기준**에서 어떤 객관적 특성을 갖는지 설명하세요.
+
 **지적 대상:** 2-3개의 (전공-기준) 쌍을 선택
 
 **각 지적마다 다음 구조로 작성:**
 
 **[전공명] - [기준명]의 점수 문제**
 1. **제안된 점수**: [상대방이 제안한 점수]
-2. **문제점**: [왜 이 점수가 부적절한지 구체적으로 설명]
+2. **문제점**: [왜 이 점수가 부적절한지 객관적으로 설명]
 3. **적절한 점수**: [당신이 생각하는 적절한 점수] (0.5 단위)
-4. **근거**: [왜 이 점수가 더 합리적인지, 사용자 특성과 연관지어 설명]
+4. **근거**: [사용자의 특성(강점/약점)을 고려할 때 왜 이 점수가 더 합리적인지]
 
 **작성 예시:**
 
-**시각디자인학부 - 높은 급여와 워라밸의 조화**
-- 제안된 점수: 4.5 (보통 이상)
-- 문제점: {target_agent['name']}님은 디자인 분야의 급여를 과소평가했습니다. 최근 UX/UI 디자이너 수요가 급증하면서 초봉이 상승했고, IT 기업에서는 높은 연봉이 가능합니다.
-- 적절한 점수: 6.0 (매우 적합)
-- 근거: 사용자가 프로그래밍과 디자인 경험을 모두 가지고 있어 UX/UI 디자이너로 성장할 가능성이 높습니다. 이 분야는 워라밸도 좋고 급여도 높아 6.0점이 적절합니다.
+**산업디자인 - 학문적 깊이와 연구 기회**
+- 제안된 점수: 4.5
+- 문제점: 디자인 분야의 학문적 깊이를 과소평가했습니다. 산업디자인은 인간공학, 재료공학, 심리학 등 다학제적 연구가 활발합니다.
+- 적절한 점수: 6.5
+- 근거: 논리적 분석과 체계적 사고가 강한 사람에게 산업디자인의 연구 기회는 충분히 매력적입니다. 디자인 씽킹과 사용자 연구 등 체계적 방법론이 발달해 있어 6.5점이 적절합니다.
 
 ---
 
 **주의사항:**
 - 150-200자로 논리적으로 반박
-- 반드시 사용자의 구체적 특성(MBTI, 강점, 경험 등)을 언급
+- 반드시 사용자의 구체적 특성(강점/약점)을 언급
 - 단순 의견 차이가 아닌 객관적 근거 제시
 """
     
@@ -533,13 +544,3 @@ def _extract_decision_matrix(content, alternatives, criteria_names):
     except Exception as e:
         print(f"[ERROR] 예외 발생: {e}")
         return {}
-
-
-# Legacy functions (하위 호환성 유지)
-def agent_score_alternative(state):
-    return run_round3_debate(state)
-
-def director_final_scoring(state):
-    if state.get('round3_debate_turns'):
-        return state
-    return run_round3_debate(state)

@@ -36,8 +36,8 @@ def run_round4():
     with open(round3_file, 'r', encoding='utf-8') as f:
         state = json.load(f)
     
-    # 데이터 확인
-    alternatives = state.get('alternatives', [])
+    # 데이터 확인 (alternatives는 user_input에서 추출)
+    alternatives = state.get('user_input', {}).get('candidate_majors', [])
     selected_criteria = state.get('selected_criteria', [])
     decision_matrix = state.get('decision_matrix', {})
     criteria_weights = state.get('criteria_weights', {})
@@ -87,11 +87,11 @@ def run_round4():
     # 결과 저장
     output_file = output_dir / f"round4_{session_id}.json"
     
-    # 저장할 데이터 준비
+    # 저장할 데이터 준비 (alternatives 제외)
     output_data = {
         'session_id': session_id,
-        'user_input': state.get('user_input', {}),
-        'alternatives': alternatives,
+        'user_input': state.get('user_input', {}),  # candidate_majors 포함
+        # 'alternatives' 제외: user_input.candidate_majors와 중복
         'selected_criteria': selected_criteria,
         'criteria_weights': criteria_weights,
         'decision_matrix': decision_matrix,

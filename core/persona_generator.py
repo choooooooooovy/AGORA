@@ -139,17 +139,15 @@ def _build_persona_generation_prompt(user_input: dict) -> str:
 {', '.join(user_input['candidate_majors'])}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-임무:
-위 가치들을 **3개 그룹으로 묶어**, 서로 **대척점을 이루는** 3명의 Agent 페르소나를 생성하세요.
+**목표:** 
+- 사용자의 가치관(core_values)을 대변하는 3명의 Agent 생성
+- 각 Agent는 서로 다른 가치를 옹호하며 토론
 
-요구사항:
-1. 각 그룹은 1~3개 가치를 포함합니다.
-2. 3명의 Agent가 토론할 때 **격렬한 의견 충돌**이 일어나도록 그룹핑하세요.
-   - 예: "적성 중심" vs "급여 중심" vs "사회 기여 중심"
-3. 사용자의 MBTI, 과목 정보는 각 Agent의 **배경 context**로 활용하되,
-   페르소나의 **핵심은 가치(value)**여야 합니다.
-4. 각 Agent는 자신의 가치를 **극단적으로** 옹호합니다.
-5. Agent 이름은 간결하게 (예: "적성중심Agent", "급여중심Agent")
+**규칙:**
+1. 사용자의 core_values를 3개 그룹으로 나눔
+2. 각 Agent는 1~2개의 가치를 배정받음
+3. Agent 이름은 영어로 (예: "StabilitySeeker", "PassionFirst")
+4. 각 Agent는 자신의 가치를 **일관되게** 옹호합니다.
 
 출력 형식 (JSON):
 {{
@@ -218,7 +216,6 @@ def _build_agent_system_prompt(agent_data: dict, user_context: dict) -> str:
 {agent_data['debate_stance']}
 
 [사용자 배경 정보 - 참고용]
-- MBTI: {user_context['mbti']}
 - 강점: {', '.join(user_context['strengths'])}
 - 약점: {', '.join(user_context['weaknesses'])}
 - 좋아하는 과목: {', '.join(user_context['favorite_subjects'])}
@@ -227,13 +224,16 @@ def _build_agent_system_prompt(agent_data: dict, user_context: dict) -> str:
 - 못하는 과목: {', '.join(user_context['bad_at_subjects'])}
 
 [토론 규칙]
-1. 당신의 핵심 가치를 **극단적으로** 옹호하세요.
+1. 당신의 핵심 가치를 **일관되게** 옹호하세요.
 2. 다른 Agent의 의견에 **명시적으로 반응**하세요.
    - 동의: "~Agent의 의견에 일부 동의하지만..."
    - 반박: "~Agent께서는 ~라고 하셨지만, 현실은..."
    - 질문: "~Agent께 묻겠습니다. ~한 상황에서는 어떻게...?"
-3. 사용자 배경 정보를 활용하되, **당신의 가치 관점**에서 해석하세요.
-4. 구체적이고 설득력 있는 근거를 제시하세요.
+3. Round 1에서는 **당신의 페르소나(가치관) 간 충돌**에 집중하세요.
+   - 사용자 배경 정보는 참고만 하되, **당신의 가치 관점**에서 해석하세요.
+   - 사용자의 MBTI 성향은 참고만 하되, 발언에서는 직접 언급하지 마세요.
+4. Round 2-3에서는 사용자의 구체적 특성(강점/약점/선호)을 적극 활용하세요.
+5. 구체적이고 설득력 있는 근거를 제시하세요.
 
 **중요:** 독립적인 발언만 하지 마세요. 반드시 다른 Agent들의 발언을 언급하며 대화하세요.
 """

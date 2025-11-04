@@ -148,7 +148,7 @@ def _agent_propose_comparisons(state, agent, criteria, pairs, turn, phase):
         api_key=Config.OPENAI_API_KEY
     )
     user_input = state['user_input']
-    majors = state['alternatives']
+    majors = user_input['candidate_majors']  # alternatives 대신 직접 사용
     
     pairs_text = "\n".join([f"  {i+1}. {a} vs {b}" for i, (a, b) in enumerate(pairs)])
     system_prompt = agent['system_prompt']
@@ -159,9 +159,18 @@ Round 1에서 선정된 {len(criteria)}개 평가 기준: {', '.join(criteria)}
 이 기준들을 쌍대비교해야 합니다 (총 {len(pairs)}개 쌍):
 {pairs_text}
 
-사용자: MBTI {user_input.get('mbti')}, 전공 {', '.join(majors)}
+사용자 특성:
+- 강점: {', '.join(user_input.get('strengths', []))}
+- 약점: {', '.join(user_input.get('weaknesses', []))}
+- 핵심 가치관: {', '.join(user_input.get('core_values', []))}
 
 **당신의 핵심 가치({', '.join(agent['core_values'])})를 바탕으로 쌍대비교를 평가하세요.**
+
+[중요 지침]
+1. 특정 학과나 전공을 언급하지 마세요. 기준 자체의 중요성만 비교하세요.
+2. 사용자의 MBTI 성향은 참고만 하되, 발언에서는 직접 언급하지 마세요.
+3. 사용자의 구체적 특성(강점/약점/가치관)을 적극적으로 근거로 활용하세요.
+4. "~한 특성을 가진 사람에게는..." 형식으로 설명하세요.
 
 {AHP_SCORE_GUIDE}
 
@@ -172,9 +181,8 @@ Round 1에서 선정된 {len(criteria)}개 평가 기준: {', '.join(criteria)}
 - B가 더 중요하면: 역수 사용 (0.67, 0.5, 0.33 등)
 
 **예시:**
-- "적성 vs 급여": 적성이 약간 더 중요 → 2.5
-- "워라밸 vs 사회공헌": 워라밸이 분명히 더 중요 → 3.0
-- "급여 vs 적성": 적성이 더 중요하므로 급여는 덜 중요 → 0.4 (= 1/2.5)
+- "적성 vs 급여": 체계적 사고가 강한 사람은 적성 일치를 더 중시 → 2.5
+- "워라밸 vs 사회공헌": 책임감이 강한 사람은 워라밸이 더 중요 → 3.0
 
 핵심 비교 3-4개만 간단히 설명하고, 마지막에 JSON 형식으로 **전체 {len(pairs)}개 쌍** 비교표를 제공하세요:
 
@@ -490,77 +498,3 @@ def _extract_comparison_matrix(content, pairs):
         print(f"[ERROR] 예외 발생: {e}")
         return {}
 
-# Legacy functions
-def agent_compare_criteria(state):
-    return run_round2_debate(state)
-
-def director_consensus_comparison(state):
-    if state.get('round2_debate_turns'):
-        return state
-    return run_round2_debate(state)
-
-def calculate_ahp_weights(state: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    AHP 가중치 계산 및 일관성 검증
-    
-    Director가 결정한 comparison_matrix를 바탕으로:
-    1. 쌍대비교 행렬 생성
-    2. 고유값 방법으로 가중치 계산
-    3. 일관성 비율(CR) 검증
-    """
-    # Director의 최종 비교 행렬 가져오기
-    comparison_dict = state.get('comparison_matrix', {})
-    if not comparison_dict:
-        raise ValueError("No comparison_matrix found in state")
-    
-    # 기준 목록 추출
-    selected_criteria = state.get('selected_criteria', [])
-    if isinstance(selected_criteria[0], dict):
-        criteria_names = [c['name'] for c in selected_criteria]
-    else:
-        criteria_names = selected_criteria
-    
-    print(f"\n[AHP 가중치 계산]")
-    print(f"기준: {criteria_names}")
-    print(f"비교 쌍: {len(comparison_dict)}개")
-    
-    # 비교 행렬을 튜플 키 형식으로 변환
-    # "적성 vs 급여": 3.0 → ("적성", "급여"): 3.0
-    comparisons_tuple = {}
-    for pair_str, value in comparison_dict.items():
-        # "기준A vs 기준B" 형식 파싱
-        parts = pair_str.split(' vs ')
-        if len(parts) == 2:
-            criterion_a = parts[0].strip()
-            criterion_b = parts[1].strip()
-            comparisons_tuple[(criterion_a, criterion_b)] = value
-    
-    # AHP 계산기 초기화
-    ahp_calc = AHPCalculator(max_cr=0.15)
-    
-    # AHP 프로세스 실행
-    result = ahp_calc.process_ahp(criteria_names, comparisons_tuple)
-    
-    # 결과 출력
-    print(f"\n[AHP 계산 완료]")
-    print(f"일관성 비율(CR): {result['cr']:.4f} {'(통과)' if result['status'] == 'passed' else '(실패)'}")
-    print(f"최대 고유값(lambda_max): {result['lambda_max']:.4f}")
-    print(f"\n[가중치]")
-    for criterion, weight in result['weights'].items():
-        print(f"  - {criterion}: {weight:.4f} ({weight*100:.2f}%)")
-    
-    # State 업데이트
-    state['ahp_result'] = result
-    state['criteria_weights'] = result['weights']
-    state['consistency_ratio'] = result['cr']
-    state['ahp_status'] = result['status']
-    
-    # CR 실패 시 경고
-    if result['status'] == 'failed':
-        print(f"\n[WARNING] 일관성 비율이 {result['cr']:.4f}로 허용 기준(0.15)을 초과했습니다.")
-        print(f"   토론을 재진행하거나 비교 행렬을 조정해야 할 수 있습니다.")
-    
-    return state
-
-def should_continue_comparisons(state):
-    return "finish"

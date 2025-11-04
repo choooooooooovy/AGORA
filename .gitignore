@@ -1,1 +1,32 @@
+# 환경 변수
 .env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Output
+output/*.json
+
+# Backup files
+*_old.py
+*_backup.py
+*.bak

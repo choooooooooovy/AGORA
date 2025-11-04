@@ -78,16 +78,6 @@ def run_round1_debate(state: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # Helper functions will be added next
-def agent_propose_criteria(state: Dict[str, Any]) -> Dict[str, Any]:
-    """레거시 함수 - 새로운 토론 시스템으로 리다이렉트"""
-    return run_round1_debate(state)
-
-
-def director_select_criteria(state: Dict[str, Any]) -> Dict[str, Any]:
-    """레거시 함수 - run_round1_debate가 이미 처리함"""
-    if state.get('round1_debate_turns'):
-        return state
-    return run_round1_debate(state)
 
 
 def _agent_propose(
@@ -99,7 +89,7 @@ def _agent_propose(
     """Agent가 평가 기준 제안"""
     llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
     user_input = state['user_input']
-    majors = state['alternatives']
+    majors = user_input['candidate_majors']  # alternatives 대신 직접 사용
     system_prompt = agent['system_prompt']
     
     user_prompt = f"""
@@ -107,25 +97,28 @@ def _agent_propose(
 핵심 가치: {', '.join(agent['core_values'])}
 입장: {agent['debate_stance']}
 
-사용자 정보:
-- MBTI: {user_input.get('mbti', 'N/A')}
+사용자의 특성:
 - 강점: {', '.join(user_input.get('strengths', []))}
 - 약점: {', '.join(user_input.get('weaknesses', []))}
 - 선호 과목: {', '.join(user_input.get('favorite_subjects', []))}
 - 비선호 과목: {', '.join(user_input.get('disliked_subjects', []))}
 - 핵심 가치관: {', '.join(user_input.get('core_values', []))}
 
-고려 대상 전공: {', '.join(majors)}
-
 **당신의 차례입니다. 당신의 핵심 가치에 기반한 평가 기준을 제안하세요.**
+
+[중요 지침]
+1. 특정 학과를 언급하지 마세요. 기준 자체에 집중하세요.
+2. 당신의 핵심 가치(페르소나)를 **확고하게** 옹호하세요.
+3. 사용자의 MBTI 성향은 참고만 하되, 발언에서는 직접 언급하지 마세요.
+4. 기준의 정의와 측정 방법을 구체적으로 제시하세요.
 
 다음 형식으로 답변하세요:
 ---
 제안 기준: [기준 이름]
 
-설명: [왜 이 기준이 중요한지 200자 이상 설명]
+중요성: [당신의 페르소나 관점에서 왜 이 기준이 중요한지 200자 이상 설명]
 
-측정 방법: [이 기준을 어떻게 평가할 것인지]
+측정 방법: [이 기준을 객관적으로 평가할 수 있는 구체적 방법 3가지 이상]
 
 ---
 """
@@ -178,10 +171,16 @@ def _agent_question(
 
 **당신의 관점에서 이 제안에 대해 날카로운 질문을 하세요.**
 
+[중요 지침]
+1. 특정 학과를 언급하지 마세요. 기준 자체에 대해 질문하세요.
+2. 당신의 핵심 가치(페르소나)를 바탕으로 질문하세요.
+3. 사용자의 MBTI 성향은 참고만 하되, 발언에서는 직접 언급하지 마세요.
+4. 측정 방법의 구체성, 타당성, 실현 가능성을 문제 삼으세요.
+
 질문 작성 가이드:
 - 당신의 핵심 가치와 충돌하는 부분을 지적
-- 구체적인 사례를 요구
-- 다른 대안적 관점 제시
+- 측정 방법의 문제점이나 대안 요구
+- 다른 관점에서의 우선순위 제시
 
 100-150자 분량으로 작성하세요.
 """
@@ -238,10 +237,16 @@ def _agent_answer(
 
 **각 질문에 대해 명확하고 설득력 있게 답변하세요.**
 
+[중요 지침]
+1. 특정 학과를 언급하지 마세요. 기준 자체를 방어하세요.
+2. 당신의 핵심 가치(페르소나)를 **확고하게** 옹호하세요.
+3. 사용자의 MBTI 성향은 참고만 하되, 발언에서는 직접 언급하지 마세요.
+4. 측정 방법의 타당성과 실현 가능성을 구체적으로 설명하세요.
+
 답변 가이드:
 - 각 질문자를 언급하며 답변
-- 당신의 핵심 가치를 재강조
-- 구체적인 근거와 사례 제시
+- 당신의 핵심 가치가 왜 우선되어야 하는지 근거 제시
+- 구체적인 연구 결과나 통계적 근거 제시
 - 200-300자 분량
 
 다음 형식으로 답변하세요:
@@ -312,7 +317,6 @@ def _director_final_decision(
     {{
       "name": "기준 이름",
       "description": "기준 설명 (200자 이상)",
-      "type": "benefit",
       "source_agent": "제안한 Agent 이름",
       "reasoning": "이 기준을 선정한 이유"
     }}
@@ -359,7 +363,7 @@ def _director_final_decision(
         "timestamp": datetime.now().isoformat()
     }
     user_input = state['user_input']
-    majors = state['alternatives']
+    majors = user_input['candidate_majors']  # alternatives 대신 직접 사용
     system_prompt = agent['system_prompt']
     
     user_prompt = f"""

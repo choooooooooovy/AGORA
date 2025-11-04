@@ -23,21 +23,24 @@ def run_round3():
     with open(latest_round2, 'r', encoding='utf-8') as f:
         round2_state = json.load(f)
     
-    # 필요한 정보 추출
+    # 필요한 정보 추출 (alternatives는 user_input에서)
     state = {
         'user_input': round2_state.get('user_input', {}),
-        'alternatives': round2_state.get('alternatives', []),  # Round 2에서 전달된 alternatives 사용
         'agent_personas': round2_state.get('agent_personas', []),
+        'ahp_weights': round2_state.get('ahp_weights', {}),
         'selected_criteria': round2_state.get('selected_criteria', []),
         'criteria_weights': round2_state.get('criteria_weights', {})
     }
+    
+    # alternatives는 user_input에서 가져오기
+    alternatives = state['user_input'].get('candidate_majors', [])
     
     print(f"\n[Round 2] 기준 가중치:")
     for criterion, weight in state['criteria_weights'].items():
         print(f"  - {criterion}: {weight:.4f}")
     
-    print(f"\n[평가 대상] {len(state['alternatives'])}개 전공")
-    for i, alt in enumerate(state['alternatives'], 1):
+    print(f"\n[평가 대상] {len(alternatives)}개 전공")
+    for i, alt in enumerate(alternatives, 1):
         print(f"  {i}. {alt}")
     
     print(f"\n[Agent Personas]")
@@ -94,7 +97,7 @@ def run_round3():
         print('-' * 80)
         
         # 각 전공별 점수 출력
-        for major in state['alternatives']:
+        for major in alternatives:
             print(f"{major:<20}", end='')
             if major in final_matrix:
                 for criterion in criteria_names:
@@ -125,11 +128,15 @@ def run_round3():
                 bar = '█' * count
                 print(f"  {score:.1f}: {bar} ({count}개)")
         
-        # 결과 저장
+        # 결과 저장 (alternatives 제외)
         session_id = latest_round2.stem.split('_')[-1]
         output_file = output_dir / f"round3_{session_id}.json"
+        
+        # alternatives 필드 제외한 상태 저장
+        save_state = {k: v for k, v in result_state.items() if k != 'alternatives'}
+        
         with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(result_state, f, ensure_ascii=False, indent=2)
+            json.dump(save_state, f, ensure_ascii=False, indent=2)
         
         print(f"\n[SAVE] 결과 저장: {output_file.name}")
         

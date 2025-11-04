@@ -23,10 +23,9 @@ def run_round2():
     with open(latest_round1, 'r', encoding='utf-8') as f:
         round1_state = json.load(f)
     
-    # 필요한 정보 추출
+    # 필요한 정보 추출 (alternatives는 user_input에서)
     state = {
         'user_input': round1_state.get('user_input', {}),
-        'alternatives': round1_state.get('alternatives', []),
         'agent_personas': round1_state.get('agent_personas', []),
         'selected_criteria': round1_state.get('selected_criteria', [])
     }
@@ -84,11 +83,15 @@ def run_round2():
         result_state = calculate_ahp_weights(result_state)
         print(f"{'='*60}")
         
-        # 결과 저장
+        # 결과 저장 (alternatives 제외)
         session_id = latest_round1.stem.split('_')[-1]
         output_file = output_dir / f"round2_{session_id}.json"
+        
+        # alternatives 필드 제외한 상태 저장
+        save_state = {k: v for k, v in result_state.items() if k != 'alternatives'}
+        
         with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(result_state, f, ensure_ascii=False, indent=2)
+            json.dump(save_state, f, ensure_ascii=False, indent=2)
         
         print(f"\n[SAVE] 결과 저장: {output_file.name}")
         

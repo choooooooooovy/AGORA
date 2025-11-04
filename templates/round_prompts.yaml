@@ -131,7 +131,6 @@ round3_scoring:
     중간값을 적극 활용하여 세밀하게 평가하세요.
     
     {criterion_description}
-    (유형: {criterion_type})
     
     응답 형식:
     - 점수: [0-9, 소수점 가능]

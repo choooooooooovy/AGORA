@@ -53,11 +53,11 @@ class UserInput(BaseModel):
         description="Core values for major selection (minimum 3). Examples: '적성 일치', '높은 급여', '미래 전망', '워라밸', '사회적 기여'"
     )
     
-    # 희망 학과
+        # 희망 학과
     candidate_majors: List[str] = Field(
         ...,
         min_length=3,
-        description="Candidate majors to evaluate (minimum 3 required)"
+        description="Candidate majors to evaluate (minimum 3 majors)"
     )
     
     # 세션 설정
