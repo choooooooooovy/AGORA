@@ -136,6 +136,40 @@ def run_round2_debate(state: Dict[str, Any]) -> Dict[str, Any]:
     state['comparison_matrix'] = director_turn.get('comparison_matrix', {})
     state['round2_director_decision'] = director_turn
     
+    # AHP 가중치 계산
+    comparison_matrix = state['comparison_matrix']
+    calculator = AHPCalculator()
+    
+    # 비교 행렬을 AHP 계산기 형식으로 변환
+    comparisons = {}
+    for pair_key, value in comparison_matrix.items():
+        criteria_a, criteria_b = pair_key.split(' vs ')
+        comparisons[(criteria_a, criteria_b)] = value
+    
+    # 쌍대비교 행렬 생성
+    pairwise_matrix = calculator.create_pairwise_matrix(criteria_names, comparisons)
+    
+    # 가중치 계산
+    weights_array = calculator.calculate_weights(pairwise_matrix)
+    
+    # CR 계산
+    lambda_max, cr = calculator.calculate_consistency_ratio(pairwise_matrix, weights_array)
+    
+    # 가중치를 딕셔너리로 변환
+    weights = {criteria_names[i]: float(weights_array[i]) for i in range(len(criteria_names))}
+    
+    # State에 결과 저장
+    state['criteria_weights'] = weights
+    state['consistency_ratio'] = float(cr)
+    state['eigenvalue_max'] = float(lambda_max)
+    
+    print(f"\n[AHP 가중치 계산 완료]")
+    print(f"  Consistency Ratio: {cr:.4f}")
+    print(f"  Lambda Max: {lambda_max:.4f}")
+    print(f"\n[기준별 가중치]")
+    for criterion, weight in weights.items():
+        print(f"  - {criterion}: {weight:.4f}")
+    
     return state
 
 

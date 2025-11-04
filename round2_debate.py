@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from workflows.round2_ahp import run_round2_debate, calculate_ahp_weights
+from workflows.round2_ahp import run_round2_debate
 
 USER_INPUT_PATH = 'data/user_inputs/current_user.json'
 
@@ -78,9 +78,9 @@ def run_round2():
         for pair, value in final_matrix.items():
             print(f"  - {pair}: {value}")
         
-        # AHP 가중치 계산
+        # AHP 가중치는 run_round2_debate 내부에서 이미 계산됨
         print(f"\n{'='*60}")
-        result_state = calculate_ahp_weights(result_state)
+        print("[AHP 가중치 계산은 토론 함수 내부에서 완료되었습니다]")
         print(f"{'='*60}")
         
         # 결과 저장 (alternatives 제외)
@@ -94,6 +94,22 @@ def run_round2():
             json.dump(save_state, f, ensure_ascii=False, indent=2)
         
         print(f"\n[SAVE] 결과 저장: {output_file.name}")
+        
+        # AHP 가중치 출력
+        criteria_weights = result_state.get('criteria_weights', {})
+        cr = result_state.get('consistency_ratio', 0)
+        lambda_max = result_state.get('eigenvalue_max', 0)
+        
+        if criteria_weights:
+            print(f"\n{'='*60}")
+            print("AHP 가중치 계산 결과:")
+            print('='*60)
+            print(f"Consistency Ratio (CR): {cr:.4f}")
+            print(f"Lambda Max: {lambda_max:.4f}")
+            print(f"\n기준별 가중치:")
+            for criterion, weight in criteria_weights.items():
+                print(f"  - {criterion}: {weight:.4f} ({weight*100:.2f}%)")
+            print('='*60)
         
         # Director의 최종 결정 전문 출력
         director_decision = result_state.get('round2_director_decision', {})
