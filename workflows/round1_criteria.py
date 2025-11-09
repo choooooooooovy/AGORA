@@ -94,22 +94,27 @@ def _agent_propose(
     
     user_prompt = f"""
 당신은 '{agent['name']}'입니다.
-핵심 가치: {', '.join(agent['core_values'])}
+관점: {agent.get('perspective', '핵심 가치')}
 입장: {agent['debate_stance']}
 
-사용자의 특성:
-- 강점: {', '.join(user_input.get('strengths', []))}
-- 약점: {', '.join(user_input.get('weaknesses', []))}
-- 선호 과목: {', '.join(user_input.get('favorite_subjects', []))}
-- 비선호 과목: {', '.join(user_input.get('disliked_subjects', []))}
-- 핵심 가치관: {', '.join(user_input.get('core_values', []))}
+사용자 정보:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**흥미:**
+{user_input.get('interests', 'N/A')}
 
-**당신의 차례입니다. 당신의 핵심 가치에 기반한 평가 기준을 제안하세요.**
+**적성:**
+{user_input.get('aptitudes', 'N/A')}
+
+**추구 가치:**
+{user_input.get('core_values', 'N/A')}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**당신의 차례입니다. 당신의 관점에 기반한 평가 기준을 제안하세요.**
 
 [중요 지침]
 1. 특정 학과를 언급하지 마세요. 기준 자체에 집중하세요.
-2. 당신의 핵심 가치(페르소나)를 **확고하게** 옹호하세요.
-3. 사용자의 MBTI 성향은 참고만 하되, 발언에서는 직접 언급하지 마세요.
+2. 당신의 관점(페르소나)을 **확고하게** 옹호하세요.
+3. 사용자의 흥미/적성/가치관을 당신의 관점에서 해석하세요.
 4. 기준의 정의와 측정 방법을 구체적으로 제시하세요.
 
 다음 형식으로 답변하세요:
@@ -161,7 +166,7 @@ def _agent_question(
     system_prompt = questioner['system_prompt']
     user_prompt = f"""
 당신은 '{questioner['name']}'입니다.
-핵심 가치: {', '.join(questioner['core_values'])}
+관점: {questioner.get('perspective', '핵심 관점')}
 입장: {questioner['debate_stance']}
 
 방금 '{target_agent['name']}'가 다음과 같이 제안했습니다:
@@ -173,12 +178,11 @@ def _agent_question(
 
 [중요 지침]
 1. 특정 학과를 언급하지 마세요. 기준 자체에 대해 질문하세요.
-2. 당신의 핵심 가치(페르소나)를 바탕으로 질문하세요.
-3. 사용자의 MBTI 성향은 참고만 하되, 발언에서는 직접 언급하지 마세요.
-4. 측정 방법의 구체성, 타당성, 실현 가능성을 문제 삼으세요.
+2. 당신의 관점(페르소나)을 바탕으로 질문하세요.
+3. 측정 방법의 구체성, 타당성, 실현 가능성을 문제 삼으세요.
 
 질문 작성 가이드:
-- 당신의 핵심 가치와 충돌하는 부분을 지적
+- 당신의 관점과 충돌하는 부분을 지적
 - 측정 방법의 문제점이나 대안 요구
 - 다른 관점에서의 우선순위 제시
 
@@ -229,7 +233,7 @@ def _agent_answer(
     
     user_prompt = f"""
 당신은 '{answerer['name']}'입니다.
-핵심 가치: {', '.join(answerer['core_values'])}
+관점: {answerer.get('perspective', '핵심 관점')}
 
 동료들이 당신의 제안에 대해 다음과 같은 질문을 했습니다:
 
@@ -239,9 +243,8 @@ def _agent_answer(
 
 [중요 지침]
 1. 특정 학과를 언급하지 마세요. 기준 자체를 방어하세요.
-2. 당신의 핵심 가치(페르소나)를 **확고하게** 옹호하세요.
-3. 사용자의 MBTI 성향은 참고만 하되, 발언에서는 직접 언급하지 마세요.
-4. 측정 방법의 타당성과 실현 가능성을 구체적으로 설명하세요.
+2. 당신의 관점(페르소나)을 **확고하게** 옹호하세요.
+3. 측정 방법의 타당성과 실현 가능성을 구체적으로 설명하세요.
 
 답변 가이드:
 - 각 질문자를 언급하며 답변
@@ -368,20 +371,24 @@ def _director_final_decision(
     
     user_prompt = f"""
 당신은 '{agent['name']}'입니다.
-핵심 가치: {', '.join(agent['core_values'])}
+관점: {agent.get('perspective', '핵심 관점')}
 입장: {agent['debate_stance']}
 
 사용자 정보:
-- MBTI: {user_input.get('mbti', 'N/A')}
-- 강점: {', '.join(user_input.get('strengths', []))}
-- 약점: {', '.join(user_input.get('weaknesses', []))}
-- 선호 과목: {', '.join(user_input.get('favorite_subjects', []))}
-- 비선호 과목: {', '.join(user_input.get('disliked_subjects', []))}
-- 핵심 가치관: {', '.join(user_input.get('core_values', []))}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**흥미:**
+{user_input.get('interests', 'N/A')}
+
+**적성:**
+{user_input.get('aptitudes', 'N/A')}
+
+**추구 가치:**
+{user_input.get('core_values', 'N/A')}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 고려 대상 전공: {', '.join(majors)}
 
-**당신의 차례입니다. 당신의 핵심 가치에 기반한 평가 기준을 제안하세요.**
+**당신의 차례입니다. 당신의 관점에 기반한 평가 기준을 제안하세요.**
 
 다음 형식으로 답변하세요:
 ---

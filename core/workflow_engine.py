@@ -47,7 +47,7 @@ class WorkflowEngine:
         agent_personas = create_dynamic_personas(user_input)
         print(f"[Workflow] {len(agent_personas)}개 페르소나 생성 완료!")
         for persona in agent_personas:
-            print(f"  - {persona['name']}: {', '.join(persona['core_values'])}")
+            print(f"  - {persona['name']}: {persona.get('perspective', 'N/A')}")
         
         # 초기 상태 구성
         state = {

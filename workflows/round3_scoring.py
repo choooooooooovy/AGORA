@@ -150,11 +150,17 @@ def _agent_propose_matrix(state, agent, criteria_names, alternatives, turn, phas
     system_prompt = agent['system_prompt']
     
     user_prompt = f"""
-사용자 특성:
-- 강점: {', '.join(user_input.get('strengths', []))}
-- 약점: {', '.join(user_input.get('weaknesses', []))}
-- 선호 과목: {', '.join(user_input.get('favorite_subjects', []))}
-- 핵심 가치관: {', '.join(user_input.get('core_values', []))}
+사용자 정보:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**흥미:**
+{user_input.get('interests', 'N/A')}
+
+**적성:**
+{user_input.get('aptitudes', 'N/A')}
+
+**추구 가치:**
+{user_input.get('core_values', 'N/A')}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 평가 대상 전공 ({len(alternatives)}개):
 {alternatives_list}
@@ -166,13 +172,12 @@ def _agent_propose_matrix(state, agent, criteria_names, alternatives, turn, phas
 
 ---
 
-**당신의 핵심 가치({', '.join(agent['core_values'])})를 바탕으로 평가하세요.**
+**당신의 관점({agent.get('perspective', '핵심 관점')})을 바탕으로 평가하세요.**
 
 [중요 지침]
-1. 사용자의 MBTI 성향은 참고만 하되, 발언에서는 직접 언급하지 마세요.
-2. 대신 사용자의 구체적 특성(강점/약점/선호 과목)을 근거로 제시하세요.
-3. "~한 특성을 가진 사람에게는..." 형식으로 설명하세요.
-4. 각 전공이 **해당 기준**에서 어떤 특성을 요구하는지 객관적으로 평가하세요.
+1. 사용자의 흥미/적성/가치관을 근거로 제시하세요.
+2. "~한 특성을 가진 사람에게는..." 형식으로 설명하세요.
+3. 각 전공이 **해당 기준**에서 어떤 특성을 요구하는지 객관적으로 평가하세요.
 
 **작성 형식:**
 
@@ -263,7 +268,7 @@ def _agent_critique(state, critic, target_agent, proposal_turn, turn, phase, deb
 [제안된 점수 샘플]
 {matrix_text}
 
-**당신의 핵심 가치({', '.join(critic['core_values'])})를 바탕으로 문제점을 지적하세요.**
+**당신의 관점({critic.get('perspective', '핵심 관점')})을 바탕으로 문제점을 지적하세요.**
 
 [중요 지침]
 1. 사용자의 MBTI 성향은 참고만 하되, 발언에서는 직접 언급하지 마세요.
@@ -332,7 +337,7 @@ def _agent_defend(state, defender, critics, turn, phase, debate_history):
 당신의 Decision Matrix 제안에 대한 반박:
 {critiques_text}
 
-**당신의 핵심 가치({', '.join(defender['core_values'])})를 바탕으로 재반박하세요.**
+**당신의 관점({defender.get('perspective', '핵심 관점')})을 바탕으로 재반박하세요.**
 
 각 반박자를 언급하며:
 - 왜 당신의 점수가 합리적인지

@@ -39,7 +39,7 @@ def run_round2():
     
     print(f"\n[Agent Personas]")
     for persona in state['agent_personas']:
-        print(f"  - {persona['name']}: {', '.join(persona['core_values'][:2])}")
+        print(f"  - {persona['name']}: {persona.get('perspective', 'N/A')}")
     
     print(f"\n[Round 2] 토론 시작...\n")
     

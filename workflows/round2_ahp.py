@@ -193,18 +193,24 @@ Round 1에서 선정된 {len(criteria)}개 평가 기준: {', '.join(criteria)}
 이 기준들을 쌍대비교해야 합니다 (총 {len(pairs)}개 쌍):
 {pairs_text}
 
-사용자 특성:
-- 강점: {', '.join(user_input.get('strengths', []))}
-- 약점: {', '.join(user_input.get('weaknesses', []))}
-- 핵심 가치관: {', '.join(user_input.get('core_values', []))}
+사용자 정보:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**흥미:**
+{user_input.get('interests', 'N/A')}
 
-**당신의 핵심 가치({', '.join(agent['core_values'])})를 바탕으로 쌍대비교를 평가하세요.**
+**적성:**
+{user_input.get('aptitudes', 'N/A')}
+
+**추구 가치:**
+{user_input.get('core_values', 'N/A')}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**당신의 관점({agent.get('perspective', '핵심 관점')})을 바탕으로 쌍대비교를 평가하세요.**
 
 [중요 지침]
 1. 특정 학과나 전공을 언급하지 마세요. 기준 자체의 중요성만 비교하세요.
-2. 사용자의 MBTI 성향은 참고만 하되, 발언에서는 직접 언급하지 마세요.
-3. 사용자의 구체적 특성(강점/약점/가치관)을 적극적으로 근거로 활용하세요.
-4. "~한 특성을 가진 사람에게는..." 형식으로 설명하세요.
+2. 사용자의 흥미/적성/가치관을 적극적으로 근거로 활용하세요.
+3. "~한 특성을 가진 사람에게는..." 형식으로 설명하세요.
 
 {AHP_SCORE_GUIDE}
 
@@ -215,8 +221,8 @@ Round 1에서 선정된 {len(criteria)}개 평가 기준: {', '.join(criteria)}
 - B가 더 중요하면: 역수 사용 (0.67, 0.5, 0.33 등)
 
 **예시:**
-- "적성 vs 급여": 체계적 사고가 강한 사람은 적성 일치를 더 중시 → 2.5
-- "워라밸 vs 사회공헌": 책임감이 강한 사람은 워라밸이 더 중요 → 3.0
+- "경제적 성공 vs 워라밸": 빠른 성장을 원하는 사람은 경제적 성공 더 중시 → 2.5
+- "워라밸 vs 사회공헌": 지속 가능성을 중시하는 사람은 워라밸 더 중요 → 3.0
 
 핵심 비교 3-4개만 간단히 설명하고, 마지막에 JSON 형식으로 **전체 {len(pairs)}개 쌍** 비교표를 제공하세요:
 
@@ -261,7 +267,7 @@ def _agent_critique(state, critic, target_agent, proposal_turn, turn, phase, deb
 [제안된 비교표]
 {matrix_text}
 
-**당신의 핵심 가치({', '.join(critic['core_values'])})를 바탕으로 문제점을 지적하세요.**
+**당신의 관점({critic.get('perspective', '핵심 관점')})을 바탕으로 문제점을 지적하세요.**
 
 가장 문제가 되는 2-3개 쌍을 지적하며:
 - 왜 점수가 적절하지 않은지
@@ -315,7 +321,7 @@ def _agent_defend(state, defender, critics, turn, phase, debate_history):
 당신의 쌍대비교 제안에 대한 반박:
 {critiques_text}
 
-**당신의 핵심 가치({', '.join(defender['core_values'])})를 바탕으로 재반박하세요.**
+**당신의 관점({defender.get('perspective', '핵심 관점')})을 바탕으로 재반박하세요.**
 
 각 반박자를 언급하며:
 - 왜 당신의 점수가 합리적인지
