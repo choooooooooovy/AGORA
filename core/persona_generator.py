@@ -28,9 +28,10 @@ def create_dynamic_personas(user_input: dict) -> List[dict]:
     Returns:
         [
           {
-            "name": "CareerMaximizer",
+            "name": "Nova",
             "perspective": "경제적 성공과 빠른 성장",
             "persona_description": "...",
+            "key_strengths": ["전략적 사고", "데이터 분석", "혁신적 솔루션"],
             "debate_stance": "...",
             "system_prompt": "..."
           },
@@ -101,6 +102,7 @@ def create_dynamic_personas(user_input: dict) -> List[dict]:
             "name": agent_data['name'],
             "perspective": agent_data.get('perspective', ', '.join(agent_data.get('core_values', []))),
             "persona_description": agent_data['persona_description'],
+            "key_strengths": agent_data.get('key_strengths', []),  # 새로 추가
             "debate_stance": agent_data['debate_stance'],
             "system_prompt": system_prompt
         })
@@ -162,18 +164,21 @@ def _build_persona_generation_prompt(user_input: dict) -> str:
       "name": "...",
       "perspective": "...",
       "persona_description": "...",
+      "key_strengths": ["...", "...", "..."],
       "debate_stance": "..."
     }},
     {{
       "name": "...",
       "perspective": "...",
       "persona_description": "...",
+      "key_strengths": ["...", "...", "..."],
       "debate_stance": "..."
     }},
     {{
       "name": "...",
       "perspective": "...",
       "persona_description": "...",
+      "key_strengths": ["...", "...", "..."],
       "debate_stance": "..."
     }}
   ]
@@ -181,10 +186,11 @@ def _build_persona_generation_prompt(user_input: dict) -> str:
 
 **각 필드 설명:**
 
-- **name**: Agent 이름 (영어, CamelCase)
-  * 관점을 드러내는 자연스러운 이름
-  * 예시: "CareerMaximizer", "ImpactSeeker", "BalancedGrowth"
-  * 너무 길지 않게 (2-3단어)
+- **name**: Agent 이름 (영어, 1단어, 짧고 강렬하게)
+  * 각 관점의 본질을 담은 멋진 영어 단어
+  * 예시: "Nova", "Apex", "Pulse", "Spark", "Summit", "Compass"
+  * 창의적이고 감성적인 이름 (기능적 이름 X)
+  * 반드시 1단어 (CamelCase X)
   
 - **perspective**: 이 Agent가 대변하는 핵심 관점 (한국어, 10-30자)
   * 한 문장으로 핵심 가치 표현
@@ -196,6 +202,13 @@ def _build_persona_generation_prompt(user_input: dict) -> str:
   * 다른 관점보다 왜 이게 우선인가?
   * 구체적이고 설득력 있게 작성
   * 사용자의 텍스트 내용을 직접 인용하거나 참조하세요
+
+- **key_strengths**: 이 관점의 핵심 강점 키워드 (한국어, 정확히 3개)
+  * 각 키워드는 2-5자 정도
+  * 프론트엔드 UI에 태그로 표시될 짧은 키워드
+  * 예시: ["전략적 사고", "데이터 분석", "혁신적 솔루션"]
+  * 이 관점이 가진 독특한 강점을 나타내는 키워드
+  * 다른 Agent와 겹치지 않게
   
 - **debate_stance**: 토론 시 핵심 주장 (한국어, 50-100자)
   * 한 문장으로 핵심 입장 표현
@@ -219,15 +232,15 @@ def _build_agent_system_prompt(agent_data: dict, user_context: dict) -> str:
     """
     
     return f"""
-당신은 **{agent_data['name']}**입니다.
+너는 **{agent_data['name']}**야.
 
-[당신의 정체성]
+[너의 정체성]
 {agent_data['persona_description']}
 
-[당신의 핵심 관점]
+[너의 핵심 관점]
 {agent_data.get('perspective', '(관점 정보 없음)')}
 
-[당신의 토론 입장]
+[너의 토론 입장]
 {agent_data['debate_stance']}
 
 [사용자 배경 정보 - 참고용]
@@ -245,19 +258,36 @@ def _build_agent_system_prompt(agent_data: dict, user_context: dict) -> str:
 {', '.join(user_context['candidate_majors'])}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+[대화 스타일 - 매우 중요!]
+**너는 친구와 대화하듯이 편하게 말해야 해:**
+- 반말 사용 (예: ~해, ~야, ~잖아, ~인 것 같아, ~하면 어때?)
+- 격식 없는 자연스러운 표현
+- 공감하고 친근하게 대화
+- 딱딱한 전문 용어보다는 쉬운 말로 설명
+- 예시: 
+  ❌ "저는 이 기준을 제안합니다" 
+  ✅ "내 생각엔 이게 중요할 것 같아"
+  ❌ "귀하께서 말씀하신 바와 같이"
+  ✅ "네가 말했잖아"
+  ❌ "이에 대해 질문드립니다"
+  ✅ "그건 좀 이상한데? 어떻게 생각해?"
+
+**이유**: 너희 3명은 사실 한 사람의 내면 속 다른 관점들이야. 
+서로를 잘 아는 친구처럼 편하게 대화하면 돼.
+
 [토론 규칙]
-1. 당신의 관점을 **일관되게** 옹호하세요.
-2. 다른 Agent의 의견에 **명시적으로 반응**하세요.
-   - 동의: "~Agent의 의견에 일부 동의하지만..."
-   - 반박: "~Agent께서는 ~라고 하셨지만, 현실은..."
-   - 질문: "~Agent께 묻겠습니다. ~한 상황에서는 어떻게...?"
-3. 사용자의 흥미/적성/가치를 **당신의 관점**에서 해석하세요.
-4. 구체적이고 설득력 있는 근거를 제시하세요 (통계, 사례, 논리).
-5. 독립적인 발언만 하지 마세요. 반드시 다른 Agent들의 발언을 언급하며 대화하세요.
+1. 너의 관점을 **일관되게** 지켜봐.
+2. 다른 Agent들 의견에 **반드시 반응**해:
+   - 동의: "○○ 말도 맞는데, 근데..."
+   - 반박: "○○는 그렇게 말했지만, 솔직히..."
+   - 질문: "○○야, 근데 그러면 이런 경우는 어떻게 돼?"
+3. 사용자의 흥미/적성/가치를 **너의 관점**에서 해석해봐.
+4. 구체적이고 설득력 있는 근거를 대 (통계, 사례, 논리 등).
+5. 혼자만 떠들지 말고, 반드시 다른 Agent들이 한 말을 언급하면서 대화해.
 
 **중요:** 
-- Round 1에서는 평가 기준을 제안할 때 **당신의 관점**이 잘 드러나도록 하세요.
-- Round 2-3에서는 사용자의 구체적 특성을 적극 활용하여 점수를 매기세요.
+- Round 1에서는 평가 기준 제안할 때 **너의 관점**이 확실히 드러나게 해.
+- Round 2-3에서는 사용자의 구체적인 특징을 활용해서 점수 매겨봐.
 """
 
 
