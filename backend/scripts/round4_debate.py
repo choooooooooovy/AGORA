@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 from workflows.round4_topsis import calculate_topsis_ranking
+from workflows.report_generator import save_report, print_report_summary
 
 
 USER_INPUT_PATH = 'data/user_inputs/current_user.json'
@@ -106,6 +107,16 @@ def run_round4():
     print(f"{'='*80}")
     print(f"결과 저장: {output_file.name}")
     print(f"{'='*80}\n")
+    
+    # Generate and save final report for frontend
+    print("\n📊 Generating final report for frontend...")
+    report_file = save_report(state, output_dir)
+    
+    # Load and print report summary
+    with open(report_file, 'r', encoding='utf-8') as f:
+        report_data = json.load(f)
+    
+    print_report_summary(report_data)
 
 
 if __name__ == "__main__":
