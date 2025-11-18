@@ -13,49 +13,49 @@ from config import Config
 from utils.ahp_calculator import AHPCalculator
 
 
-# AHP 점수 척도 가이드
+# AHP score scale guide
 AHP_SCORE_GUIDE = """
-**점수 척도 (1-9, 0.5 단위) - 기준 A가 기준 B보다 얼마나 더 중요한가:**
+**Score Scale (1-9, 0.5 increments) - How much more important is Criterion A than Criterion B:**
 
-[1.0 - 2.0] 거의 동등하거나 미세한 차이
-- 1.0: 거의 동등 - 두 기준이 거의 같은 중요도
-- 1.5: 아주 약간 더 중요 - 미세한 차이만 존재
-- 2.0: 조금 더 중요 - 작지만 명확한 차이
+[1.0 - 2.0] Almost equal or minimal difference
+- 1.0: Almost equal - Both criteria have similar importance
+- 1.5: Very slightly more important - Minimal difference exists
+- 2.0: Slightly more important - Small but clear difference
 
-[2.5 - 4.0] 눈에 띄는 차이
-- 2.5: 약간 더 중요 - 눈에 띄는 차이가 있음
-- 3.0: 분명히 더 중요 - 확실한 차이가 있음
-- 3.5: 상당히 더 중요 - 큰 차이가 있음
-- 4.0: 매우 중요 - 매우 큰 차이
+[2.5 - 4.0] Noticeable difference
+- 2.5: Somewhat more important - Noticeable difference
+- 3.0: Clearly more important - Definite difference
+- 3.5: Considerably more important - Large difference
+- 4.0: Very important - Very large difference
 
-[4.5 - 6.5] 압도적인 차이
-- 4.5: 훨씬 더 중요 - 압도적 차이의 시작
-- 5.0: 강하게 더 중요 - 명백한 우위
-- 5.5: 매우 강하게 더 중요 - 확고한 우위
-- 6.0: 지배적으로 중요 - 압도적 우위
-- 6.5: 극도로 중요 - 비교 불가 수준
+[4.5 - 6.5] Overwhelming difference
+- 4.5: Much more important - Beginning of overwhelming difference
+- 5.0: Strongly more important - Clear superiority
+- 5.5: Very strongly more important - Firm superiority
+- 6.0: Dominantly important - Overwhelming superiority
+- 6.5: Extremely important - Incomparable level
 
-[7.0 - 9.0] 극단적 차이 (매우 드물게 사용)
-- 7.0: 절대적으로 중요 - 완전한 우위
-- 7.5: 최고 수준으로 중요 - 극단적 우위
-- 8.0: 압도적으로 중요 - 거의 비교 불가
-- 8.5: 극단적으로 중요 - 완전 비교 불가
-- 9.0: 절대 우위 - 상상할 수 없는 차이
+[7.0 - 9.0] Extreme difference (use very rarely)
+- 7.0: Absolutely important - Complete superiority
+- 7.5: Highest level of importance - Extreme superiority
+- 8.0: Overwhelmingly important - Nearly incomparable
+- 8.5: Extremely important - Completely incomparable
+- 9.0: Absolute superiority - Unimaginable difference
 
-**역수 (B가 A보다 중요한 경우):**
-- 0.67 (= 1/1.5): B가 아주 약간 더
-- 0.5 (= 1/2): B가 조금 더
-- 0.4 (= 1/2.5): B가 약간 더
-- 0.33 (= 1/3): B가 분명히 더
-- 0.29 (= 1/3.5): B가 상당히 더
-- 0.25 (= 1/4): B가 매우 더
-- ... (이하 동일 패턴)
+**Reciprocals (when B is more important than A):**
+- 0.67 (= 1/1.5): B very slightly more
+- 0.5 (= 1/2): B slightly more
+- 0.4 (= 1/2.5): B somewhat more
+- 0.33 (= 1/3): B clearly more
+- 0.29 (= 1/3.5): B considerably more
+- 0.25 (= 1/4): B very much more
+- ... (same pattern continues)
 
-**점수 선택 원칙:**
-- 사용자의 MBTI, 가치관, 목표를 고려
-- 두 기준 중 하나가 사용자에게 얼마나 더 중요한지 판단
-- 대부분의 점수는 2-6 범위 내에 있어야 함
-- 7 이상은 매우 명확하고 극단적인 차이가 있을 때만 사용
+**Score Selection Principles:**
+- Consider user's MBTI, values, and goals
+- Judge how much more important one criterion is to the user
+- Most scores should be within 2-6 range
+- Use 7 or above only when there's a very clear and extreme difference
 """
 
 
@@ -188,71 +188,64 @@ def _agent_propose_comparisons(state, agent, criteria, pairs, turn, phase):
     system_prompt = agent['system_prompt']
     
     user_prompt = f"""
-Round 1에서 선정된 {len(criteria)}개 평가 기준: {', '.join(criteria)}
+{len(criteria)} evaluation criteria selected in Round 1: {', '.join(criteria)}
 
-이 기준들을 쌍대비교해야 합니다 (총 {len(pairs)}개 쌍):
+These criteria need to be pairwise compared (total {len(pairs)} pairs):
 {pairs_text}
 
-사용자 정보:
+User Information:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-**흥미:**
+**Interests:**
 {user_input.get('interests', 'N/A')}
 
-**적성:**
+**Aptitudes:**
 {user_input.get('aptitudes', 'N/A')}
 
-**추구 가치:**
+**Core Values:**
 {user_input.get('core_values', 'N/A')}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-**네 관점({agent.get('perspective', '핵심 관점')})을 바탕으로 쌍대비교를 평가해봐.**
+**Evaluate pairwise comparisons based on your perspective ({agent.get('perspective', 'Core perspective')}).**
 
-[중요한 것]
-1. 특정 학과나 전공 언급하지 말고, 기준 자체의 중요성만 비교해.
-2. 사용자의 흥미/적성/가치관을 적극적으로 근거로 써.
-3. "~한 특성을 가진 사람한테는..." 형식으로 설명해봐.
+[Important Points]
+1. Don't mention specific majors, only compare the importance of criteria themselves.
+2. Actively use user's interests/aptitudes/values as evidence.
+3. Explain in format like "For someone with ~ characteristics..."
 
-[구체적 근거 필수 요구사항] ⭐ 매우 중요
-각 핵심 비교에 대해 반드시 다음 중 2가지 이상 포함해:
+[Concrete Rebuttal Requirements] VERY IMPORTANT
 
-1. **사용자 키워드 직접 인용**: 
-   예) "사용자가 '높은 연봉'을 명시했으니까..."
-   예) "사용자의 '논리적 사고력'이라는 강점을 보면..."
+**Critique target:** 2-3 specific scores (not all)
 
-2. **구체적 비율/수치**:
-   예) "경제적 성장이 70% 중요하고 워라밸이 30%라면..."
-   예) "이 관점에서는 3:1 비율로..."
+**For each score, this structure is REQUIRED:**
 
-3. **시나리오 제시**:
-   예) "만약 사용자가 대기업에 입사한다면..."
-   예) "5년 후를 생각해보면..."
+**[Criterion A] vs [Criterion B]: proposed score**
+- Problems: Why overrated/underrated + Quote user keywords
+- Appropriate score: Suggest alternative score
+- Rationale: Specific evidence + Scoring logic
 
-4. **비교 논리**:
-   예) "A가 없으면 B는 의미 없지만, B가 없어도 A는 가능하니까..."
-   예) "단기적으로는 A지만 장기적으로는 B가..."
-
-❌ 나쁜 예시: "경제적 성장이 중요해" (근거 없음)
-✅ 좋은 예시: "사용자가 '빠른 성장' 2번 언급했고, 이건 경제적 성장이 워라밸보다 2.5배 중요하다는 뜻이야"
+[BAD] "This score is overrated" (no evidence)
+[GOOD] "3.0 is overrated. User used the word 'sustainable', which means valuing work-life balance, so 1.5 is appropriate"
 
 {AHP_SCORE_GUIDE}
 
-**평가 방법:**
-각 쌍을 비교할 때, "A가 B보다 얼마나 더 중요한가?"를 판단해.
-- A가 더 중요하면: 1.5 ~ 9.0
-- 거의 동등하면: 1.0
-- B가 더 중요하면: 역수 사용 (0.67, 0.5, 0.33 등)
+**Evaluation Method:**
+For each pair, judge "How much more important is A than B?"
+- If A is more important: 1.5 ~ 9.0
+- Almost equal: 1.0
+- If B is more important: use reciprocal (0.67, 0.5, 0.33, etc.)
 
-**예시:**
-- "경제적 성공 vs 워라밸": 빠른 성장 원하는 사람은 경제적 성공 더 중시 → 2.5
-- "워라밸 vs 사회공헌": 지속 가능성 중시하는 사람은 워라밸 더 중요 → 3.0
+**Examples:**
+- "Economic success vs Work-life balance": Those wanting fast growth prioritize economic success → 2.5
+- "Work-life balance vs Social contribution": Those valuing sustainability prioritize work-life balance → 3.0
 
-핵심 비교 3-4개만 간단히 설명하고, 마지막에 JSON 형식으로 **전체 {len(pairs)}개 쌍** 비교표 제공해:
+Briefly explain only 3-4 key comparisons, then provide **all {len(pairs)} pairs** comparison table in JSON format at the end:
 
 ```json
-{{"comparison_matrix": {{"기준A vs 기준B": 숫자, ...}}}}
+{{"comparison_matrix": {{"기준A vs 기준B": number, ...}}}}
 ```
 
-**말투 주의**: 친구한테 말하듯이 편하게 써. 반말 쓰고, 자연스럽게!
+**Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
+**ALL your output (explanations and JSON keys) MUST be in Korean.**
 """
     
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
@@ -285,44 +278,45 @@ def _agent_critique(state, critic, target_agent, proposal_turn, turn, phase, deb
     
     system_prompt = critic['system_prompt']
     user_prompt = f"""
-'{target_agent['name']}'의 쌍대비교 제안:
+'{target_agent['name']}'s pairwise comparison proposal:
 {proposal_turn['content'][:400]}...
 
-[제안된 비교표]
+[Proposed Comparison Table]
 {matrix_text}
 
-**네 관점({critic.get('perspective', '핵심 관점')})을 바탕으로 문제점을 지적해봐.**
+**Point out problems based on your perspective ({critic.get('perspective', 'Core perspective')}).**
 
-[구체적 반박 필수 요구사항] ⭐ 매우 중요
-가장 문제되는 2-3개 쌍을 지적하면서, 각각에 대해 반드시 포함해:
+[Concrete Rebuttal Requirements] ⭐ Very Important
+Point out 2-3 most problematic pairs, and for each must include:
 
-1. **제안된 점수 명시**: "X vs Y: 3.0"
-2. **문제점 구체화**: 
-   - 사용자의 어느 부분을 놓쳤어?
-   - 어떤 논리적 모순이 있어?
-3. **대안 점수 + 근거**:
-   예) "1.5가 적절해. 왜냐면 사용자가 '워라밸'을 2번, '빠른 성장'을 3번 언급했으니까 3:2 = 1.5배지"
-   예) "4.0이 합리적이야. 사용자의 '글로벌 기업' 언급은 경제적 성장을 4배 더 중시한다는 뜻이야"
+1. **State proposed score**: "X vs Y: 3.0"
+2. **Specify the problem**: 
+   - Which part of the user did they miss?
+   - What logical contradiction exists?
+3. **Alternative score + evidence**:
+   e.g., "1.5 is appropriate. Because user mentioned 'work-life balance' 2 times and 'fast growth' 3 times, so 3:2 = 1.5x"
+   e.g., "4.0 is reasonable. User's mention of 'global company' means prioritizing economic growth 4x more"
 
-❌ 나쁜 반박: "이 점수는 과대평가야" (근거 없음)
-✅ 좋은 반박: "3.0은 과대평가야. 사용자가 '지속 가능한'이라는 단어 썼고, 이건 워라밸 중시를 의미하니까 1.5가 적절해"
+❌ Bad rebuttal: "This score is overrated" (no evidence)
+✅ Good rebuttal: "3.0 is overrated. User used the word 'sustainable', which means valuing work-life balance, so 1.5 is appropriate"
 
-가장 문제되는 2-3개 쌍을 지적하면서:
-- 왜 점수가 적절하지 않은지
-- 네 관점에서는 어떤 점수가 더 합리적인지 **(0.5 단위로 제시)**
+Point out 2-3 most problematic pairs while:
+- Why the score is not appropriate
+- What score is more reasonable from your perspective **(suggest in 0.5 increments)**
   
-**점수 선택 가이드:**
-  1.0-2.0: 미세한 차이 
-  2.5-4.0: 눈에 띄는 차이
-  4.5-6.5: 압도적 차이
-  7.0-9.0: 극단적 차이 (매우 드물게)
+**Score Selection Guide:**
+  1.0-2.0: Subtle difference 
+  2.5-4.0: Noticeable difference
+  4.5-6.5: Overwhelming difference
+  7.0-9.0: Extreme difference (very rare)
   
-  예: "이 쌍은 6.5(극도로 중요) 정도가 적절해"
-      "1.5(아주 약간 차이)로 평가하는 게 합리적이야"
+  e.g., "This pair should be around 6.5 (extremely important)"
+       "Evaluating as 1.5 (very slight difference) is reasonable"
 
-150-250자로 논리적으로 반박해봐.
+Rebut logically in 150-250 characters.
 
-**말투 주의**: 친구한테 말하듯이 편하게. 반말 쓰고, 자연스럽게!
+**Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
+**ALL your output MUST be in Korean.**
 """
     
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
@@ -358,31 +352,32 @@ def _agent_defend(state, defender, critics, turn, phase, debate_history):
     critiques_text = "\n\n".join([f"[{c['speaker']}의 반박]\n{c['content']}" for c in critiques_received])
     
     user_prompt = f"""
-네 쌍대비교 제안에 대한 반박:
+Rebuttals to your pairwise comparison proposal:
 {critiques_text}
 
-**네 관점({defender.get('perspective', '핵심 관점')})을 바탕으로 재반박해봐.**
+**Counter-rebut based on your perspective ({defender.get('perspective', 'Core perspective')}).**
 
-[구체적 방어 필수 요구사항] ⭐ 매우 중요
-각 반박자의 주장에 대해 반드시 포함해:
+[Concrete Defense Requirements] VERY IMPORTANT
+For each rebuttal, must include:
 
-1. **반박자 이름 명시**: "{critics[0]['name']}야..." 또는 "{critics[0]['name']} 말은..."
-2. **그들의 주장 요약**: "...라고 했지만"
-3. **구체적 재반박**:
-   - 사용자 정보의 다른 측면 제시해
-   - 그들이 놓친 키워드나 맥락 지적해
-   - 숫자로 반박해 (예: "3번 vs 1번 언급", "70% vs 30%" 등)
+1. **Name the rebuttor**: "{critics[0]['name']}야..." or "{critics[0]['name']} 말은..."
+2. **Summarize their argument**: "...라고 했지만"
+3. **Concrete counter-rebuttal**:
+   - Present different aspects of user information
+   - Point out keywords or context they missed
+   - Rebut with numbers (e.g., "3 mentions vs 1 mention", "70% vs 30%", etc.)
 
-예시:
+Example:
 "{critics[0]['name']}가 워라밸을 강조했지만, 사용자는 '높은 연봉'을 3번, '빠른 성장'을 2번 언급한 반면 '워라밸'은 1번만 언급했어. 이건 5:1 비율로 경제적 성장을 우선시한다는 뜻이야"
 
-각 반박자 언급하면서:
-- 왜 네 점수가 합리적인지
-- 반박자들의 주장에서 놓친 부분은 뭔지
+While mentioning each rebuttor:
+- Why your score is reasonable
+- What the rebuttors missed in their arguments
 
-150-250자로 논리적으로 방어해봐.
+Defend logically in 150-250 characters.
 
-**말투 주의**: 친구한테 말하듯이 편하게. 반말 쓰고, 자연스럽게!
+**Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
+**ALL your output MUST be in Korean.**
 """
     
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
@@ -422,108 +417,109 @@ def _director_final_decision(state, personas, criteria, pairs, debate_history):
     
     pairs_text = "\n".join([f"  {i+1}. {a} vs {b}" for i, (a, b) in enumerate(pairs)])
     
-    system_prompt = """당신은 공정한 중재자입니다. 
-3명 Agent의 입장을 종합하여, 균형잡힌 최종 비교 행렬을 결정하세요.
+    system_prompt = """You are a fair moderator. 
+Synthesize the positions of the 3 Agents to determine a balanced final comparison matrix.
 
-[구체적 근거 기반 결정 원칙] ⭐ 매우 중요
+[Evidence-Based Decision Principles] VERY IMPORTANT
 
-1. **Agent 주장의 근거 평가**:
-   - 사용자 키워드를 인용한 주장에 더 높은 가중치
-   - 구체적 수치/비율을 제시한 주장 우선
-   - 추상적 주장("중요하다")은 낮은 가중치
+1. **Evaluate Agent Arguments' Evidence**:
+   - Higher weight for arguments citing user keywords
+   - Prioritize arguments presenting specific numbers/ratios
+   - Lower weight for abstract arguments ("it's important")
 
-2. **사용자 입력 직접 분석**:
-   - 각 기준과 관련된 키워드 빈도 카운트
-   - 예: "높은 연봉" 3회, "워라밸" 1회 → 3:1 = 3.0
-   - 강조 표현("매우", "정말", "특히") 있으면 +0.5
+2. **Direct Analysis of User Input**:
+   - Count keyword frequency related to each criterion
+   - e.g., "high salary" 3 times, "work-life balance" 1 time → 3:1 = 3.0
+   - Add +0.5 if emphasis expressions ("very", "really", "especially") present
 
-3. **점수 결정 논리**:
-   - 키워드 빈도 비율을 점수로 변환
-   - Agent 합의도를 고려하여 조정
-   - 최종 점수 = (키워드 비율 × 0.7) + (Agent 합의도 × 0.3)
+3. **Score Decision Logic**:
+   - Convert keyword frequency ratio to score
+   - Adjust considering Agent consensus
+   - Final score = (keyword ratio × 0.7) + (Agent consensus × 0.3)
 
-점수 결정 원칙:
-1. **점수별 명확한 의미 구분**:
-   - 1-2: 거의 비슷하거나 미세한 차이
-   - 2.5-4: 눈에 띄는 차이, 하나가 분명히 더 중요
-   - 4.5-6.5: 큰 차이, 하나가 압도적으로 중요
-   - 7-9: 극단적 차이, 비교 불가능한 수준
+Score Decision Principles:
+1. **Clear Distinction by Score**:
+   - 1-2: Almost similar or subtle difference
+   - 2.5-4: Noticeable difference, one clearly more important
+   - 4.5-6.5: Big difference, one overwhelmingly important
+   - 7-9: Extreme difference, incomparable level
 
-2. **토론 합의 수준에 따라**:
-   - 3명 대부분 동의: 명확한 값 (6-8 또는 1/6-1/8)
-   - 2명 동의, 1명 반대: 중간~강한 값 (4-6 또는 1/4-1/6)
-   - 의견 갈림: 보통 값 (2-4)
-   - 완전 대립: 중립 값 (1-1.5)
+2. **Based on Debate Consensus**:
+   - 3 Agents mostly agree: Clear value (6-8 or 1/6-1/8)
+   - 2 agree, 1 opposes: Medium~strong value (4-6 or 1/4-1/6)
+   - Opinions split: Normal value (2-4)
+   - Complete opposition: Neutral value (1-1.5)
 
-3. **반드시 0.5 단위 사용**: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9
+3. **Must use 0.5 increments**: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9
 
-4. **변별력 확보 (최우선 원칙)**: 
-   - 같은 점수를 3번 이상 사용하지 마세요!
-   - 10개 쌍은 최소 7개 이상의 서로 다른 점수를 받아야 합니다
-   - 하나의 점수가 20%를 초과하면 안 됩니다 (10개 중 최대 2개까지만)
-   - 예시 (잘못됨): 3.5가 4개, 4.0이 3개 → 다양성 부족!
-   - 예시 (올바름): 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5 → 모두 다름
-   - 각 쌍의 고유한 특성을 반영하여 차별화된 점수를 부여하세요
+4. **Ensure Discrimination (Top Priority)**: 
+   - Don't use same score more than 3 times!
+   - 10 pairs should receive at least 7 different scores
+   - One score shouldn't exceed 20% (max 2 out of 10)
+   - Example (wrong): 3.5 four times, 4.0 three times → lack diversity!
+   - Example (correct): 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5 → all different
+   - Assign differentiated scores reflecting each pair's unique characteristics
 
-5. **점수 범위 적극 활용 (변별력 향상)**: 
-   - 1-9 전체 척도를 넓게 활용하세요! 2-4 범위에만 몰리면 안 됩니다
-   - 목표: 최소값과 최대값의 차이가 3.0 이상 되도록 하세요
+5. **Actively Use Full Score Range (Improve Discrimination)**: 
+   - Use the full 1-9 scale widely! Don't cluster only in 2-4 range
+   - Target: difference between min and max should be at least 3.0
    
-6. **합의 수준별 점수 범위 가이드**:
-   - 3명 Agent 모두 강하게 합의 (명확한 우위): 6.0-8.0 범위 사용
-   - 2명 동의, 1명 반대 (보통 우위): 3.5-5.5 범위 사용
-   - 의견 갈림 (약한 우위): 2.0-3.0 범위 사용
-   - 완전 대립 또는 중립 (거의 동등): 1.0-1.5 범위 사용
-   - 목표 분포: 대부분 3-6점 범위, 1-2점과 7-9점은 극단적인 경우만"""
+6. **Score Range Guide by Consensus Level**:
+   - All 3 Agents strongly agree (clear advantage): Use 6.0-8.0 range
+   - 2 agree, 1 opposes (normal advantage): Use 3.5-5.5 range
+   - Opinions split (weak advantage): Use 2.0-3.0 range
+   - Complete opposition or neutral (almost equal): Use 1.0-1.5 range
+   - Target distribution: mostly 3-6 points, 1-2 and 7-9 only for extreme cases"""
 
     user_prompt = f"""
-12턴의 토론:
+12 turns of debate:
 {debate_summary}
 
-각 Agent의 제안:
+Each Agent's proposal:
 {proposals_text}
 
-다음 {len(pairs)}개 쌍의 최종 비교값을 결정하세요:
+Decide final comparison values for the following {len(pairs)} pairs:
 {pairs_text}
 
-**각 점수의 의미를 정확히 이해하고, 토론 내용을 반영하여 균형잡힌 값을 사용하세요.**
+**Accurately understand the meaning of each score and use balanced values reflecting the debate content.**
 
-**점수 가이드 (0.5 단위):**
-- 1: 거의 동등
-- 1.5-2: 아주 약간/조금 더 중요
-- 2.5-3: 약간/분명히 더 중요
-- 3.5-4: 상당히/매우 중요
-- 4.5-5: 훨씬/강하게 더 중요
-- 5.5-6: 매우 강하게/지배적으로 중요
-- 6.5-7: 극도로/절대적으로 중요
-- 7.5-9: 최고 수준/압도적 우위 (드물게 사용)
+**Score Guide (0.5 increments):**
+- 1: Almost equal
+- 1.5-2: Very slightly/somewhat more important
+- 2.5-3: Slightly/clearly more important
+- 3.5-4: Considerably/very important
+- 4.5-5: Much/strongly more important
+- 5.5-6: Very strongly/dominantly important
+- 6.5-7: Extremely/absolutely important
+- 7.5-9: Highest level/overwhelming advantage (use rarely)
 
-**필수: 넓은 점수 범위 사용하기**
-- 1-9 전체 척도를 골고루 활용하세요
-- 모든 점수가 비슷한 범위(예: 2-4)에만 몰려있으면 안 됩니다
-- 토론에서 강한 합의가 있었다면 5.0 이상의 높은 점수를 적극 사용하세요
-- 의견이 비슷하거나 대립한다면 낮은 점수(1.0-2.0)도 사용하세요
-- 각 쌍의 중요도 차이를 점수 범위로 명확히 구분하세요
+**Required: Use Wide Score Range**
+- Use the full 1-9 scale evenly
+- All scores shouldn't cluster in similar range (e.g., 2-4)
+- If there was strong consensus in debate, actively use high scores of 5.0 or above
+- If opinions are similar or opposed, also use low scores (1.0-2.0)
+- Clearly distinguish importance differences of each pair through score range
 
-**토론 내용을 점수로 변환:**
-- Agent 3명 모두 동의 → **6-8** 사용
-- Agent 2명 강하게 동의 → **4-6** 사용
-- Agent 2명 약하게 동의 → **3-4** 사용
-- 의견이 갈림 → **2-3** 사용
-- Agent 2명이 반대 → **1-2** 사용 (역수 사용)
+**Convert Debate Content to Scores:**
+- All 3 Agents agree → Use **6-8**
+- 2 Agents strongly agree → Use **4-6**
+- 2 Agents weakly agree → Use **3-4**
+- Opinions split → Use **2-3**
+- 2 Agents oppose → Use **1-2** (use reciprocal)
 
-**구체적 예시:**
-- "A가 절대적으로 중요하다" (3명 합의) → 7.0
-- "A가 훨씬 중요하다" (2명 합의) → 5.0
-- "A가 약간 중요하다" (의견 갈림) → 2.5
-- "거의 비슷하다" (완전 대립) → 1.0
+**Concrete Examples:**
+- "A is absolutely important" (3 agents agree) → 7.0
+- "A is much more important" (2 agents agree) → 5.0
+- "A is slightly more important" (opinions split) → 2.5
+- "Almost similar" (complete opposition) → 1.0
 
-역수 예시: 1/2=0.5, 1/3=0.33, 1/4=0.25, 1/5=0.2, 1/6=0.17, 1/7=0.14
+Reciprocal examples: 1/2=0.5, 1/3=0.33, 1/4=0.25, 1/5=0.2, 1/6=0.17, 1/7=0.14
 
-JSON 형식으로 답변:
+Answer in JSON format:
 ```json
-{{"comparison_matrix": {{"기준A vs 기준B": 숫자, ...}}, "reasoning": "각 점수 결정 이유 설명"}}
+{{"comparison_matrix": {{"기준A vs 기준B": number, ...}}, "reasoning": "Explanation of each score decision"}}
 ```
+**ALL field values (keys and reasoning) MUST be in Korean.**
 """
     
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]

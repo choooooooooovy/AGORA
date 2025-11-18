@@ -93,41 +93,42 @@ def _agent_propose(
     system_prompt = agent['system_prompt']
     
     user_prompt = f"""
-너는 '{agent['name']}'야.
-관점: {agent.get('perspective', '핵심 가치')}
-입장: {agent['debate_stance']}
+You are '{agent['name']}'.
+Perspective: {agent.get('perspective', 'Core value')}
+Stance: {agent['debate_stance']}
 
-사용자 정보:
+User Information:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-**흥미:**
+**Interests:**
 {user_input.get('interests', 'N/A')}
 
-**적성:**
+**Aptitudes:**
 {user_input.get('aptitudes', 'N/A')}
 
-**추구 가치:**
+**Core Values:**
 {user_input.get('core_values', 'N/A')}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-**이제 네 차례야. 네 관점에서 중요하다고 생각하는 평가 기준을 제안해봐.**
+**Now it's your turn. Propose evaluation criteria you think are important from your perspective.**
 
-[중요한 것]
-1. 특정 학과를 언급하지는 마. 기준 자체에 집중해.
-2. 네 관점(페르소나)을 **확실하게** 드러내.
-3. 사용자의 흥미/적성/가치관을 네 시각에서 해석해봐.
-4. 기준을 어떻게 측정할지 구체적으로 말해줘.
+[Important Points]
+1. Don't mention specific majors. Focus on the criteria itself.
+2. **Clearly** show your perspective (persona).
+3. Interpret the user's interests/aptitudes/values from your viewpoint.
+4. Explain concretely how to measure this criterion.
 
-다음 형식으로 답해:
+Answer in this format:
 ---
-제안 기준: [기준 이름]
+제안 기준: [Criterion name]
 
-중요성: [네 관점에서 왜 이게 중요한지 200자 이상 설명해봐]
+중요성: [Explain in 200+ characters why this is important from your perspective]
 
-측정 방법: [이 기준을 객관적으로 평가할 방법 3가지 이상]
+측정 방법: [3+ ways to objectively evaluate this criterion]
 
 ---
 
-**말투 주의**: 친구한테 말하듯이 편하게 써. 반말 쓰고, 자연스럽게!
+**Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
+**ALL your output MUST be in Korean.**
 """
     
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
@@ -167,31 +168,32 @@ def _agent_question(
     
     system_prompt = questioner['system_prompt']
     user_prompt = f"""
-너는 '{questioner['name']}'야.
-관점: {questioner.get('perspective', '핵심 관점')}
-입장: {questioner['debate_stance']}
+You are '{questioner['name']}'.
+Perspective: {questioner.get('perspective', 'Core perspective')}
+Stance: {questioner['debate_stance']}
 
-방금 '{target_agent['name']}'가 이렇게 제안했어:
+'{target_agent['name']}' just proposed this:
 ---
 {latest_proposal['content']}
 ---
 
-**네 관점에서 이 제안에 대해 날카롭게 질문해봐.**
+**Ask sharp questions about this proposal from your perspective.**
 
-[중요한 것]
-1. 특정 학과 언급하지 말고, 기준 자체에 대해 질문해.
-2. 네 관점(페르소나)을 기반으로 물어봐.
-3. 측정 방법이 구체적인지, 타당한지, 실현 가능한지 따져봐.
+[Important Points]
+1. Don't mention specific majors, focus on the criteria itself.
+2. Ask based on your perspective (persona).
+3. Check if the measurement method is specific, valid, and feasible.
 
-질문 작성 가이드:
-- 네 관점과 충돌하는 부분을 지적해
-- 측정 방법의 문제점이나 대안 요구해봐
-- 다른 관점에서의 우선순위를 제시해봐
+Question Writing Guide:
+- Point out conflicts with your perspective
+- Request alternative measurement methods or identify problems
+- Suggest priorities from a different viewpoint
 
-100-150자 정도로 써봐.
+Write about 100-150 characters.
 
-**말투 주의**: 친구한테 말하듯이 편하게. 반말 쓰고, 자연스럽게!
-예: "그건 좀 이상한데?", "근데 그렇게 하면...", "○○야, 그건 어떻게..."
+**Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
+Examples: "그건 좀 이상한데?", "근데 그렇게 하면...", "○○야, 그건 어떻게..."
+**ALL your output MUST be in Korean.**
 """
     
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
@@ -237,37 +239,38 @@ def _agent_answer(
     ])
     
     user_prompt = f"""
-너는 '{answerer['name']}'야.
-관점: {answerer.get('perspective', '핵심 관점')}
+You are '{answerer['name']}'.
+Perspective: {answerer.get('perspective', 'Core perspective')}
 
-친구들이 네 제안에 대해 이렇게 질문했어:
+Your friends asked these questions about your proposal:
 
 {questions_text}
 
-**각 질문에 대해 명확하고 설득력 있게 답변해봐.**
+**Answer each question clearly and persuasively.**
 
-[중요한 것]
-1. 특정 학과 언급하지 말고, 기준 자체를 방어해.
-2. 네 관점(페르소나)을 **확실하게** 옹호해.
-3. 측정 방법이 왜 타당하고 실현 가능한지 구체적으로 설명해.
+[Important Points]
+1. Don't mention specific majors, defend the criteria itself.
+2. **Clearly** defend your perspective (persona).
+3. Explain concretely why the measurement method is valid and feasible.
 
-답변 가이드:
-- 각 질문한 친구를 언급하며 답해
-- 네 핵심 가치가 왜 우선되어야 하는지 근거 대
-- 구체적인 연구 결과나 통계 근거 제시해
-- 200-300자 정도
+Answer Guide:
+- Mention each questioner by name when answering
+- Provide evidence for why your core values should be prioritized
+- Present specific research results or statistical evidence
+- About 200-300 characters
 
-다음 형식으로 답해:
+Answer in this format:
 ---
-[질문자 이름]야:
-[답변 내용]
+[Questioner name]야:
+[Answer content]
 
-[질문자 이름]야:
-[답변 내용]
+[Questioner name]야:
+[Answer content]
 ---
 
-**말투 주의**: 친구한테 말하듯이 편하게. 반말 쓰고, 자연스럽게!
-예: "그건 이렇게 보면 돼", "솔직히 말하면...", "네 말도 맞는데..."
+**Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
+Examples: "그건 이렇게 보면 돼", "솔직히 말하면...", "네 말도 맞는데..."
+**ALL your output MUST be in Korean.**
 """
     
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
@@ -302,41 +305,42 @@ def _director_final_decision(
     
     max_criteria = state.get('max_criteria', 5)
     
-    system_prompt = """당신은 공정하고 객관적인 중재자입니다. 
-세 명의 전문가가 토론한 내용을 종합하여 최종 평가 기준을 선정해야 합니다.
-각 전문가의 관점을 균형있게 반영하되, 사용자에게 가장 도움이 되는 기준을 선택하세요."""
+    system_prompt = """You are a fair and objective moderator. 
+You must synthesize the discussion content from three experts and select the final evaluation criteria.
+Balance the perspectives of each expert while choosing criteria that will be most helpful to the user."""
     
     user_prompt = f"""
-다음은 전공 선택을 위한 평가 기준에 대한 12턴의 토론 내용입니다:
+The following is the content of a 12-turn debate about evaluation criteria for major selection:
 
 {debate_summary}
 
 ---
 
-**임무: 위 토론 내용을 바탕으로 최종 {max_criteria}개의 평가 기준을 선정하세요.**
+**Mission: Based on the above debate content, select the final {max_criteria} evaluation criteria.**
 
-선정 원칙:
-1. 세 전문가의 핵심 가치를 골고루 반영
-2. 측정 가능하고 구체적인 기준
-3. 사용자의 전공 선택에 실질적 도움이 되는 기준
-4. 중복되지 않는 독립적인 기준
+Selection Principles:
+1. Balance the core values of the three experts
+2. Measurable and specific criteria
+3. Criteria that provide practical help for the user's major selection
+4. Independent criteria that don't overlap
 
-다음 JSON 형식으로 답변하세요:
+Answer in the following JSON format:
 ```json
 {{
   "selected_criteria": [
     {{
-      "name": "기준 이름",
-      "description": "기준 설명 (200자 이상)",
-      "source_agent": "제안한 Agent 이름",
-      "reasoning": "이 기준을 선정한 이유"
+      "name": "Criterion name",
+      "description": "Criterion description (200+ characters)",
+      "source_agent": "Name of proposing Agent",
+      "reasoning": "Reason for selecting this criterion"
     }}
   ],
-  "summary": "최종 결정에 대한 종합 설명 (300자 이상)"
+  "summary": "Comprehensive explanation of final decision (300+ characters)"
 }}
 ```
 
-**중요: 반드시 정확한 JSON 형식으로만 답변하세요. 다른 텍스트는 포함하지 마세요.**
+**Important: Answer ONLY in exact JSON format. Do not include any other text.**
+**ALL field values (name, description, reasoning, summary) MUST be in Korean.**
 """
     
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]

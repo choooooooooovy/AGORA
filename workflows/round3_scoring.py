@@ -11,42 +11,42 @@ from langchain.schema import HumanMessage, SystemMessage
 from config import Config
 
 
-# Decision Matrix 점수 척도 가이드
+# Decision Matrix score scale guide
 SCORING_GUIDE = """
-**점수 척도 (1-9, 0.5 단위) - 각 전공이 각 기준에서 얼마나 적합한가:**
+**Score Scale (1-9, 0.5 increments) - How suitable is each major for each criterion:**
 
-[1.0 - 3.0] 부적합 구간
-- 1.0: 매우 부적합 - 이 전공은 해당 기준에서 전혀 맞지 않음
-- 1.5: 거의 부적합 - 거의 모든 측면에서 맞지 않음
-- 2.0: 부적합 - 여러 측면에서 맞지 않음
-- 2.5: 약간 부적합 - 일부 측면에서 맞지 않음
-- 3.0: 다소 부적합 - 부족한 점이 눈에 띔
+[1.0 - 3.0] Unsuitable range
+- 1.0: Very unsuitable - This major doesn't match this criterion at all
+- 1.5: Almost unsuitable - Doesn't match in almost all aspects
+- 2.0: Unsuitable - Doesn't match in multiple aspects
+- 2.5: Somewhat unsuitable - Doesn't match in some aspects
+- 3.0: Rather unsuitable - Noticeable deficiencies
 
-[3.5 - 5.5] 보통 구간
-- 3.5: 보통 이하 - 기대에 조금 못 미침
-- 4.0: 보통 - 무난한 수준
-- 4.5: 보통 이상 - 기대를 조금 상회
-- 5.0: 적합 - 기준을 충분히 만족
-- 5.5: 상당히 적합 - 기준을 잘 만족
+[3.5 - 5.5] Average range
+- 3.5: Below average - Slightly below expectations
+- 4.0: Average - Decent level
+- 4.5: Above average - Slightly exceeds expectations
+- 5.0: Suitable - Sufficiently satisfies the criterion
+- 5.5: Quite suitable - Satisfies the criterion well
 
-[6.0 - 9.0] 적합 구간
-- 6.0: 매우 적합 - 기준에 아주 잘 부합
-- 6.5: 아주 적합 - 기준을 크게 상회
-- 7.0: 탁월하게 적합 - 매우 훌륭한 선택
-- 7.5: 매우 탁월하게 적합 - 거의 이상적
-- 8.0: 거의 이상적 - 완벽에 가까움
-- 8.5: 거의 완벽 - 흠잡을 데 없음
-- 9.0: 완벽하게 적합 - 더 이상 바랄 것 없음
+[6.0 - 9.0] Suitable range
+- 6.0: Very suitable - Matches the criterion very well
+- 6.5: Highly suitable - Greatly exceeds the criterion
+- 7.0: Excellently suitable - Very good choice
+- 7.5: Very excellently suitable - Nearly ideal
+- 8.0: Nearly ideal - Close to perfect
+- 8.5: Almost perfect - Flawless
+- 9.0: Perfectly suitable - Nothing more to wish for
 
-**점수 선택 기준:**
-- 사용자의 MBTI 성향과 전공의 특성이 얼마나 일치하는가?
-- 사용자의 강점이 해당 전공에서 발휘될 가능성은?
-- 사용자가 중요하게 생각하는 가치가 이 전공에서 실현될 가능성은?
-- 객관적 데이터(취업률, 급여, 워라밸 등)는 어떠한가?
+**Score Selection Criteria:**
+- How well does the user's MBTI traits match the major's characteristics?
+- What's the likelihood the user's strengths will be utilized in this major?
+- What's the likelihood the user's important values will be realized in this major?
+- What about objective data (employment rate, salary, work-life balance, etc.)?
 
-**점수 분포 가이드:**
-- 8-9점: 정말 예외적으로 완벽한 경우만 (매우 드물게)
-- 1-2점: 명백히 부적합한 경우만 (매우 드물게)
+**Score Distribution Guide:**
+- 8-9 points: Only for truly exceptional and perfect cases (very rare)
+- 1-2 points: Only for clearly unsuitable cases (very rare)
 """
 
 
@@ -150,52 +150,52 @@ def _agent_propose_matrix(state, agent, criteria_names, alternatives, turn, phas
     system_prompt = agent['system_prompt']
     
     user_prompt = f"""
-사용자 정보:
+User Information:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-**흥미:**
+**Interests:**
 {user_input.get('interests', 'N/A')}
 
-**적성:**
+**Aptitudes:**
 {user_input.get('aptitudes', 'N/A')}
 
-**추구 가치:**
+**Core Values:**
 {user_input.get('core_values', 'N/A')}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-평가 대상 전공 ({len(alternatives)}개):
+Majors to evaluate ({len(alternatives)}):
 {alternatives_list}
 
-평가 기준 ({len(criteria_names)}개, Round 1에서 선정):
+Evaluation criteria ({len(criteria_names)}, selected in Round 1):
 {criteria_list}
 
 {SCORING_GUIDE}
 
 ---
 
-**네 관점({agent.get('perspective', '핵심 관점')})을 바탕으로 평가해봐.**
+**Evaluate based on your perspective ({agent.get('perspective', 'Core perspective')}).**
 
-[중요한 것]
-1. 사용자의 흥미/적성/가치관을 근거로 써.
-2. "~한 특성을 가진 사람한테는..." 형식으로 설명해봐.
-3. 각 전공이 **해당 기준**에서 어떤 특성을 요구하는지 객관적으로 평가해.
+[Important Points]
+1. Use user's interests/aptitudes/values as evidence.
+2. Explain in format like "For someone with ~ characteristics..."
+3. Objectively evaluate what characteristics each major requires for **that criterion**.
 
-[구체적 근거 필수 요구사항] ⭐ 매우 중요
-각 핵심 평가(2-3개)에 대해 반드시 다음 구조를 따라:
+[Concrete Evidence Requirements] VERY IMPORTANT
+For each key evaluation (2-3), must follow this structure:
 
-**[전공명] - [기준명]: [점수]**
+**[Major Name] - [Criterion Name]: [Score]**
 
-근거 (다음 3가지 필수):
-1. **사용자 매칭**: "사용자의 '[흥미/적성/가치]'와 이 전공의 '[특성]'이 일치"
-2. **구체적 특성**: 전공의 실제 커리큘럼, 직무, 산업 특성 언급
-3. **점수 산정 논리**: 왜 이 점수인지 명확한 이유
+Evidence (following 3 required):
+1. **User Matching**: "User's '[interest/aptitude/value]' matches this major's '[characteristic]'"
+2. **Concrete Characteristics**: Mention actual curriculum, job roles, industry characteristics
+3. **Score Calculation Logic**: Clear reason why this score
 
-**개선된 예시:**
+**Improved Examples:**
 
-❌ 나쁜 예시:
+[BAD]
 "컴퓨터공학 - 경제적 성장: 8.5"
 "근거: 경제적 전망이 좋아"
 
-✅ 좋은 예시:
+[GOOD]
 "컴퓨터공학 - 경제적 성장 잠재력: 8.5"
 "근거: 
 - 사용자가 '높은 연봉'을 명시했고, 컴공은 신입 평균 초봉 5,500만원으로 5개 전공 중 최고야
@@ -244,7 +244,8 @@ def _agent_propose_matrix(state, agent, criteria_names, alternatives, turn, phas
 }}
 ```
 
-**말투 주의**: 친구한테 말하듯이 편하게 써. 반말 쓰고, 자연스럽게!
+**Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
+**ALL your output (explanations, JSON keys, and values) MUST be in Korean.**
 
 **주의사항:**
 - 반드시 0.5 단위로만 점수 부여 (1.0, 1.5, 2.0, 2.5, ..., 9.0)
@@ -292,53 +293,54 @@ def _agent_critique(state, critic, target_agent, proposal_turn, turn, phase, deb
     
     system_prompt = critic['system_prompt']
     user_prompt = f"""
-'{target_agent['name']}'의 Decision Matrix 제안:
+'{target_agent['name']}'s Decision Matrix Proposal:
 
 {proposal_turn['content'][:500]}...
 
-[제안된 점수 샘플]
+[Proposed Scores Sample]
 {matrix_text}
 
-**네 관점({critic.get('perspective', '핵심 관점')})을 바탕으로 문제점을 지적해봐.**
+**Based on your perspective ({critic.get('perspective', '핵심 관점')}), point out the problems.**
 
-[구체적 반박 필수 요구사항] ⭐ 매우 중요
+[Specific Critique Requirements] ⭐ Very Important
 
-**지적 대상:** 2-3개의 (전공-기준) 쌍을 선택
+**Critique Target:** Select 2-3 (major-criterion) pairs
 
-**각 지적마다 다음 구조로 작성 (필수):**
+**For each critique, use this structure (mandatory):**
 
-**[전공명] - [기준명]**
-1. **제안된 점수**: X.X
-2. **문제점**: [사용자 키워드 인용] + [전공의 실제 특성 제시]
-3. **적절한 점수**: Y.Y
-4. **근거**: [구체적 수치/비율/사례] + [점수 산정 논리]
+**[Major Name] - [Criterion Name]**
+1. **Proposed Score**: X.X
+2. **Problem**: [Quote user keywords] + [Present actual major characteristics]
+3. **Appropriate Score**: Y.Y
+4. **Rationale**: [Specific numbers/ratios/examples] + [Score calculation logic]
 
-**개선된 예시:**
+**Improved Example:**
 
-❌ 나쁜 반박:
+❌ Bad critique:
 "산업디자인 - 학문적 깊이: 4.5는 과소평가야"
 
-✅ 좋은 반박:
+✅ Good critique:
 "**산업디자인 - 학문적 깊이와 연구 기회**
 - 제안된 점수: 4.5
 - 문제점: 사용자가 '체계적 사고'를 언급했는데, 산업디자인의 다학제 연구(인간공학, 재료공학, UX 연구)를 간과했어. 실제 디자인 대학원 연구실 수는 컴공의 70% 수준이야
 - 적절한 점수: 6.5
 - 근거: 사용자의 '논리적 분석' 강점 + 디자인씽킹 방법론의 체계성 + 석사 진학률 35% = 6.5점"
 
-[중요한 것]
-1. 사용자의 흥미/적성/가치에서 구체적 키워드를 인용해.
-2. 전공의 실제 특성(커리큘럼, 산업 현황, 통계)을 언급해.
-3. 점수 차이에 대한 명확한 논리를 제시해.
+[Important Points]
+1. Quote specific keywords from user's interests/aptitude/values.
+2. Mention actual major characteristics (curriculum, industry status, statistics).
+3. Provide clear logic for score differences.
 
 ---
 
-**주의사항:**
-- 200-250자로 논리적으로 반박
-- 반드시 사용자의 구체적 키워드 인용
-- 전공의 객관적 특성이나 통계 제시
-- 점수 산정 논리 명확히 설명
+**Notes:**
+- Write logically in 200-250 characters
+- Must quote specific user keywords
+- Present objective major characteristics or statistics
+- Clearly explain score calculation logic
 
-**말투 주의**: 친구한테 말하듯이 편하게 써. 반말 쓰고, 자연스럽게!
+**Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
+**ALL your output MUST be in Korean.**
 """
     
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
@@ -374,18 +376,19 @@ def _agent_defend(state, defender, critics, turn, phase, debate_history):
     critiques_text = "\n\n".join([f"[{c['speaker']}의 반박]\n{c['content']}" for c in critiques_received])
     
     user_prompt = f"""
-네 Decision Matrix 제안에 대한 반박:
+Critiques on your Decision Matrix proposal:
 {critiques_text}
 
-**네 관점({defender.get('perspective', '핵심 관점')})을 바탕으로 재반박해봐.**
+**Based on your perspective ({defender.get('perspective', '핵심 관점')}), counter-argue.**
 
-각 반박자 언급하면서:
-- 왜 네 점수가 합리적인지
-- 반박자들의 주장에서 놓친 부분은 뭔지
+For each critic:
+- Why is your score reasonable?
+- What did the critics miss?
 
-150-250자로 논리적으로 방어해봐.
+Defend logically in 150-250 characters.
 
-**말투 주의**: 친구한테 말하듯이 편하게 써. 반말 쓰고, 자연스럽게!
+**Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
+**ALL your output MUST be in Korean.**
 """
     
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
@@ -432,44 +435,91 @@ def _director_final_decision(state, personas, criteria_names, alternatives, deba
     alternatives_list = "\n".join([f"  {i+1}. {alt}" for i, alt in enumerate(alternatives)])
     criteria_list = "\n".join([f"  {i+1}. {c}" for i, c in enumerate(criteria_names)])
     
-    system_prompt = """당신은 공정한 중재자입니다.
-3명 Agent의 Decision Matrix 제안을 종합하여 균형잡힌 최종 매트릭스를 결정하세요.
+    system_prompt = """You are a fair moderator.
+Synthesize the Decision Matrix proposals from 3 agents to determine a balanced final matrix.
 
-**점수 결정 원칙:**
+**Scoring Principles:**
 
-1. **토론 합의 수준 반영**
-   - 3명 모두 비슷한 점수 제안 → 그 점수 채택
-   - 2명이 유사, 1명만 다름 → 2명 쪽에 가중치
-   - 완전히 의견 갈림 → 중간값 또는 평균
+1. **Reflect Debate Consensus Level**
+   - All 3 agents propose similar scores → Adopt that score
+   - 2 agents similar, 1 different → Weight toward the 2
+   - Complete disagreement → Use median or average
    
-2. **변별력 확보 (최우선 원칙)**
-   - 같은 점수를 3번 이상 사용하지 마세요!
-   - 35개 평가 중 최소 10개 이상의 서로 다른 점수를 사용하세요
-   - 하나의 점수가 30%를 초과하면 안 됩니다 (35개 중 최대 10개까지만)
-   - 예시 (잘못됨): 6.5가 12개, 7.0이 10개 → 변별력 부족!
-   - 예시 (올바름): 3.5(2), 4.0(3), 4.5(3), 5.0(4), 5.5(3), 6.0(4), 6.5(5), 7.0(5), 7.5(4), 8.0(2) → 다양함
-   - 각 (전공-기준) 쌍의 고유한 특성을 반영하여 차별화된 점수를 부여하세요
+2. **Ensure Discriminative Power (TOP PRIORITY)**
+   - Don't use the same score more than 3 times!
+   - Use at least 10 different scores out of 35 evaluations
+   - One score should not exceed 30% (max 10 out of 35)
+   - Example (WRONG): 6.5 appears 12 times, 7.0 appears 10 times → Lack of discriminative power!
+   - Example (CORRECT): 3.5(2), 4.0(3), 4.5(3), 5.0(4), 5.5(3), 6.0(4), 6.5(5), 7.0(5), 7.5(4), 8.0(2) → Diverse
+   - Reflect the unique characteristics of each (major-criterion) pair with differentiated scores
    
-3. **점수 범위 및 분포 (변별력 향상)**
-   - 전체 범위 활용: 최소값과 최대값의 차이가 최소 3.0 이상 되어야 합니다
-   - 우수 전공 (1-3위): 6.0-8.0 범위 (8-9는 정말 예외적인 경우만)
-   - 중간 전공 (4-5위): 4.5-6.5 범위
-   - 하위 전공 (6-7위): 3.0-5.5 범위 (1-2는 명백히 부적합한 경우만)
-   - 목표 분포: 종 모양 곡선 (대부분 4-7점, 양 극단은 소수)
-   - 극단값 사용: 8-9점과 1-2점은 각각 전체의 5% 이내
+3. **Score Range & Distribution (Improve Discriminative Power)**
+   - Use full range: Difference between min and max must be at least 3.0
+   - Top majors (1-3): 6.0-8.0 range (8-9 only for exceptional cases)
+   - Middle majors (4-5): 4.5-6.5 range
+   - Lower majors (6-7): 3.0-5.5 range (1-2 only for clearly unsuitable cases)
+   - Target distribution: Bell curve (most 4-7 points, few extremes)
+   - Extreme values: 8-9 and 1-2 should each be within 5% of total
    
-4. **0.5 단위 엄수**
-   - 반드시 1.0, 1.5, 2.0, ..., 9.0만 사용
+4. **Strict 0.5 Unit**
+   - Only use 1.0, 1.5, 2.0, ..., 9.0
    
-5. **논리적 일관성**
-   - 같은 전공 내에서 관련 기준들은 유사한 점수대
-   - 예: "적성"이 높으면 "직무 만족도"도 높을 가능성
-   - 단, 기계적으로 같은 점수를 주지 말고 미묘한 차이를 표현하세요 (6.5 vs 7.0)
+5. **Logical Consistency**
+   - Related criteria within same major should have similar score ranges
+   - Example: If "aptitude" is high, "job satisfaction" likely high too
+   - But don't mechanically give same score - express subtle differences (6.5 vs 7.0)
    
-6. **전공 간 명확한 차별화**
-   - 전공 평균 점수의 표준편차가 최소 0.5 이상 되도록 하세요
-   - 최고 전공과 최하위 전공의 평균 차이가 최소 1.5 이상
-   - 순위가 명확히 구분되어야 합니다
+6. **Clear Differentiation Between Majors**
+   - Standard deviation of major average scores should be at least 0.5
+   - Difference between top and bottom major averages should be at least 1.5
+   - Rankings must be clearly distinguished
+"""
+    
+    user_prompt = f"""
+Summary of 12 debate turns:
+{debate_summary}
+
+Sample proposals from each agent:
+{proposals_text}
+
+---
+
+Majors to evaluate:
+{alternatives_list}
+
+Evaluation criteria:
+{criteria_list}
+
+**Determine the final Decision Matrix.**
+
+Assign scores for all major × criterion combinations,
+faithfully reflecting debate content while maintaining score diversity.
+
+Respond in JSON format:
+
+```json
+{{
+  "decision_matrix": {{
+    "전공명": {{
+      "기준명": 점수,
+      ...
+    }},
+    ...
+  }},
+  "reasoning": "점수 결정 이유를 2-3문장으로 설명"
+}}
+```
+
+**Checklist:**
+- [ ] All majors included
+- [ ] All criteria included
+- [ ] Only 0.5 units used
+- [ ] Same score used max 2-3 times (ensure discriminative power!)
+- [ ] At least 10 different scores used
+- [ ] Full range utilized (min-max difference ≥ 3.0)
+- [ ] Clear average difference between majors (std dev ≥ 0.5)
+
+**ALL JSON field values (전공명, 기준명, reasoning) MUST be in Korean.**
 """
     
     user_prompt = f"""

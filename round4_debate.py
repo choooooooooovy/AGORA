@@ -71,7 +71,7 @@ def run_round4():
         major = item['major']
         closeness = item['closeness_coefficient']
         
-        print(f"🏆 {rank}위: {major}")
+        print(f"[{rank}위] {major}")
         print(f"   근접도 계수: {closeness:.4f}")
         print(f"   이상해까지 거리: {item['distance_to_ideal']:.4f}")
         print(f"   반이상해까지 거리: {item['distance_to_anti_ideal']:.4f}")

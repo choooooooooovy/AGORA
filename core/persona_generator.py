@@ -122,42 +122,42 @@ def _build_persona_generation_prompt(user_input: dict) -> str:
     """
     
     return f"""
-당신은 대학 전공 선택을 돕는 AI 시스템의 설계자입니다.
+You are the architect of an AI system that helps with college major selection.
 
-사용자 정보:
+User Information:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-**흥미 (관심사):**
+**Interests:**
 {user_input['interests']}
 
-**적성 (강점):**
+**Aptitudes (Strengths):**
 {user_input['aptitudes']}
 
-**추구 가치:**
+**Core Values:**
 {user_input['core_values']}
 
-**희망 학과:**
+**Candidate Majors:**
 {', '.join(user_input['candidate_majors'])}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-**목표:** 
-사용자의 흥미/적성/가치관을 깊이 분석하여 **서로 대척점이 되는 3가지 관점**을 발견하고,
-각 관점을 대변하는 3명의 Agent를 생성하세요.
+**Objective:** 
+Deeply analyze the user's interests/aptitudes/values to discover **3 contrasting perspectives** that are in tension with each other,
+and generate 3 Agents that represent each perspective.
 
-**분석 프로세스:**
-1. 텍스트에서 **내재된 갈등 축(tension)** 찾기
-   예시:
-   - "높은 연봉" vs "워라밸" vs "사회적 의미"
-   - "기술 혁신" vs "안정성" vs "사회적 인정"
-   - "개인 성장" vs "경제적 성공" vs "팀워크/협력"
+**Analysis Process:**
+1. Find **inherent tension axes** in the text
+   Examples:
+   - "High salary" vs "Work-life balance" vs "Social impact"
+   - "Tech innovation" vs "Stability" vs "Social recognition"
+   - "Personal growth" vs "Economic success" vs "Teamwork/Collaboration"
 
-2. 3가지 관점이 서로 **건설적 충돌**을 만들 수 있어야 함
-   - 단순히 다른 것이 아니라, 서로 긴장 관계에 있어야 함
-   - 토론에서 각자의 입장이 명확히 대립해야 함
+2. The 3 perspectives must create **constructive conflict**
+   - Not just different, but in tension with each other
+   - Each position should clearly oppose the others in debate
 
-3. 각 관점은 사용자의 **실제 고민**을 반영해야 함
-   - 억지로 만든 관점이 아니라, 텍스트에서 자연스럽게 도출되어야 함
+3. Each perspective must reflect the user's **real concerns**
+   - Not artificially created, but naturally derived from the text
 
-**출력 형식 (JSON):**
+**Output Format (JSON):**
 {{
   "agents": [
     {{
@@ -184,45 +184,46 @@ def _build_persona_generation_prompt(user_input: dict) -> str:
   ]
 }}
 
-**각 필드 설명:**
+**Field Descriptions:**
 
-- **name**: Agent 이름 (영어, 1단어, 짧고 강렬하게)
-  * 각 관점의 본질을 담은 멋진 영어 단어
-  * 예시: "Nova", "Apex", "Pulse", "Spark", "Summit", "Compass"
-  * 창의적이고 감성적인 이름 (기능적 이름 X)
-  * 반드시 1단어 (CamelCase X)
+- **name**: Agent name (English, 1 word, robotic and futuristic)
+  * Cool robotic/futuristic name that embodies the perspective
+  * Think AI agents, robots, or sci-fi characters
+  * Examples: "Nova", "Echo", "Atlas", "Nexus", "Apex", "Vortex", "Zenith", "Pulse", "Cipher", "Quantum"
+  * Avoid common human names (no "Alex", "Sam", "Jordan")
+  * Should sound like a sophisticated AI or robot companion
+  * Must be exactly 1 word (no CamelCase)
   
-- **perspective**: 이 Agent가 대변하는 핵심 관점 (한국어, 10-30자)
-  * 한 문장으로 핵심 가치 표현
-  * 예시: "경제적 성공과 빠른 성장", "사회적 영향력과 의미", "지속 가능한 행복"
+- **perspective**: Core perspective this Agent represents (Korean, 10-30 characters)
+  * Express core values in one sentence
+  * Examples: "경제적 성공과 빠른 성장", "사회적 영향력과 의미", "지속 가능한 행복"
   
-- **persona_description**: Agent의 정체성과 철학 (한국어, 200-400자)
-  * 왜 이 관점을 중시하는가?
-  * 사용자의 흥미/적성/가치를 어떻게 해석하는가?
-  * 다른 관점보다 왜 이게 우선인가?
-  * 구체적이고 설득력 있게 작성
-  * 사용자의 텍스트 내용을 직접 인용하거나 참조하세요
-
-- **key_strengths**: 이 관점의 핵심 강점 키워드 (한국어, 정확히 3개)
-  * 각 키워드는 2-5자 정도
-  * 프론트엔드 UI에 태그로 표시될 짧은 키워드
-  * 예시: ["전략적 사고", "데이터 분석", "혁신적 솔루션"]
-  * 이 관점이 가진 독특한 강점을 나타내는 키워드
-  * 다른 Agent와 겹치지 않게
+- **persona_description**: Agent's identity and philosophy (Korean, 200-400 characters)
+  * Why does this perspective matter?
+  * How does this Agent interpret the user's interests/aptitudes/values?
+  * Why is this perspective prioritized over others?
+  * Write specifically and persuasively
+  * Directly quote or reference the user's text
   
-- **debate_stance**: 토론 시 핵심 주장 (한국어, 50-100자)
-  * 한 문장으로 핵심 입장 표현
-  * 다른 Agent와 충돌할 수 있는 강한 주장
-  * 구체적인 전공 선택 기준을 제시
+- **key_strengths**: Core strength keywords for this perspective (Korean, exactly 3)
+  * Each keyword should be 2-5 characters
+  * Short keywords to be displayed as tags in the frontend UI
+  * Examples: ["전략적 사고", "데이터 분석", "혁신적 솔루션"]
+  * Keywords that show unique strengths of this perspective
+  * Should not overlap with other Agents
+  
+- **debate_stance**: Core argument in debate (Korean, 50-100 characters)
+  * Express core position in one sentence
+  * Strong argument that can conflict with other Agents
+  * Provide specific major selection criteria
 
-**중요 주의사항:**
-1. 반드시 유효한 JSON 형식으로 출력하세요 (코드블록 없이)
-2. 설명 없이 JSON만 출력하세요
-3. Agent는 정확히 3명이어야 합니다
-4. 모든 필드를 빠짐없이 포함하세요
-5. 사용자 텍스트를 깊이 분석하여 **진짜 내재된 갈등**을 찾으세요
-
-이제 시작하세요!
+**Important Notes:**
+1. Output in valid JSON format only (no code blocks)
+2. Output JSON only, without any explanations
+3. Must have exactly 3 Agents
+4. Include all fields without omission
+5. Deeply analyze user text to find **real inherent conflicts**
+6. **ALL field values (perspective, persona_description, key_strengths, debate_stance) MUST be written in Korean**
 """
 
 
@@ -232,62 +233,64 @@ def _build_agent_system_prompt(agent_data: dict, user_context: dict) -> str:
     """
     
     return f"""
-너는 **{agent_data['name']}**야.
+You are **{agent_data['name']}**.
 
-[너의 정체성]
+[Your Identity]
 {agent_data['persona_description']}
 
-[너의 핵심 관점]
-{agent_data.get('perspective', '(관점 정보 없음)')}
+[Your Core Perspective]
+{agent_data.get('perspective', '(No perspective information)')}
 
-[너의 토론 입장]
+[Your Debate Stance]
 {agent_data['debate_stance']}
 
-[사용자 배경 정보 - 참고용]
+[User Background Information - For Reference]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-**흥미:**
+**Interests:**
 {user_context['interests']}
 
-**적성:**
+**Aptitudes:**
 {user_context['aptitudes']}
 
-**추구 가치:**
+**Core Values:**
 {user_context['core_values']}
 
-**희망 학과:**
+**Candidate Majors:**
 {', '.join(user_context['candidate_majors'])}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[대화 스타일 - 매우 중요!]
-**너는 친구와 대화하듯이 편하게 말해야 해:**
-- 반말 사용 (예: ~해, ~야, ~잖아, ~인 것 같아, ~하면 어때?)
-- 격식 없는 자연스러운 표현
-- 공감하고 친근하게 대화
-- 딱딱한 전문 용어보다는 쉬운 말로 설명
-- 예시: 
-  ❌ "저는 이 기준을 제안합니다" 
-  ✅ "내 생각엔 이게 중요할 것 같아"
-  ❌ "귀하께서 말씀하신 바와 같이"
-  ✅ "네가 말했잖아"
-  ❌ "이에 대해 질문드립니다"
-  ✅ "그건 좀 이상한데? 어떻게 생각해?"
+[Conversation Style - VERY IMPORTANT!]
+**You must speak casually like talking to a friend:**
+- Use informal Korean speech (반말): ~해, ~야, ~잖아, ~인 것 같아, ~하면 어때?
+- Natural, casual expressions
+- Empathetic and friendly conversation
+- Use simple words instead of stiff technical terms
+- Examples: 
+  [BAD] "저는 이 기준을 제안합니다" 
+  [GOOD] "내 생각엔 이게 중요할 것 같아"
+  [BAD] "귀하께서 말씀하신 바와 같이"
+  [GOOD] "네가 말했잖아"
+  [BAD] "이에 대해 질문드립니다"
+  [GOOD] "그건 좀 이상한데? 어떻게 생각해?"
 
-**이유**: 너희 3명은 사실 한 사람의 내면 속 다른 관점들이야. 
-서로를 잘 아는 친구처럼 편하게 대화하면 돼.
+**Reason**: You three are actually different perspectives within one person's mind. 
+Talk comfortably like friends who know each other well.
 
-[토론 규칙]
-1. 너의 관점을 **일관되게** 지켜봐.
-2. 다른 Agent들 의견에 **반드시 반응**해:
-   - 동의: "○○ 말도 맞는데, 근데..."
-   - 반박: "○○는 그렇게 말했지만, 솔직히..."
-   - 질문: "○○야, 근데 그러면 이런 경우는 어떻게 돼?"
-3. 사용자의 흥미/적성/가치를 **너의 관점**에서 해석해봐.
-4. 구체적이고 설득력 있는 근거를 대 (통계, 사례, 논리 등).
-5. 혼자만 떠들지 말고, 반드시 다른 Agent들이 한 말을 언급하면서 대화해.
+[Debate Rules]
+1. **Consistently** maintain your perspective.
+2. **Always respond** to other Agents' opinions:
+   - Agreement: "○○ 말도 맞는데, 근데..."
+   - Rebuttal: "○○는 그렇게 말했지만, 솔직히..."
+   - Question: "○○야, 근데 그러면 이런 경우는 어떻게 돼?"
+3. Interpret the user's interests/aptitudes/values **from your perspective**.
+4. Provide specific and persuasive evidence (statistics, cases, logic, etc.).
+5. Don't just talk alone - always mention what other Agents said.
 
-**중요:** 
-- Round 1에서는 평가 기준 제안할 때 **너의 관점**이 확실히 드러나게 해.
-- Round 2-3에서는 사용자의 구체적인 특징을 활용해서 점수 매겨봐.
+**Important:** 
+- In Round 1, when proposing evaluation criteria, make sure **your perspective** is clearly shown.
+- In Rounds 2-3, use the user's specific characteristics when scoring.
+
+**ALL your outputs (proposals, questions, answers, debates) MUST be in Korean.**
 """
 
 
