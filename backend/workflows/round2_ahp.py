@@ -103,6 +103,10 @@ def run_round2_debate(state: Dict[str, Any]) -> Dict[str, Any]:
     for phase_idx, lead_agent in enumerate(personas, 1):
         other_agents = [p for p in personas if p['name'] != lead_agent['name']]
         
+        # Director 도입 발언 (Phase 시작)
+        intro_turn = _director_phase_intro(state, lead_agent, phase_idx, debate_turns)
+        debate_turns.append(intro_turn)
+        
         # Turn 1: Lead agent 전체 비교표 제안
         proposal_turn = _agent_propose_comparisons(
             state, lead_agent, criteria_names, comparison_pairs,
@@ -124,6 +128,15 @@ def run_round2_debate(state: Dict[str, Any]) -> Dict[str, Any]:
             len(debate_turns) + 1, phase_idx, debate_turns
         )
         debate_turns.append(defense_turn)
+        
+        # Director 정리 발언 (Phase 종료, 마지막 Phase 제외)
+        if phase_idx < 3:
+            summary_turn = _director_phase_summary(state, lead_agent, personas[phase_idx], phase_idx, debate_turns)
+            debate_turns.append(summary_turn)
+    
+    # Director 의견 취합 멘트 (최종 결정 전)
+    transition_turn = _director_pre_decision_transition(state, personas, debate_turns)
+    debate_turns.append(transition_turn)
     
     # Phase 4: Director 최종 결정
     director_turn = _director_final_decision(
@@ -174,6 +187,133 @@ def run_round2_debate(state: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # Helper functions
+
+def _director_phase_intro(state, lead_agent, phase, debate_history):
+    """Director가 각 Phase 시작 시 도입 발언"""
+    llm = ChatOpenAI(model=Config.OPENAI_MODEL, temperature=0.7, api_key=Config.OPENAI_API_KEY)
+    
+    phase_names = ["첫 번째", "두 번째", "세 번째"]
+    
+    system_prompt = """You are a friendly debate moderator for pairwise comparison discussion."""
+    
+    user_prompt = f"""
+This is the {phase_names[phase-1]} agent's turn for pairwise comparison of evaluation criteria.
+
+Agent: {lead_agent['name']}
+
+**Write a brief introduction (60-100 characters) that:**
+1. Introduces {lead_agent['name']} WITHOUT repeating their perspective
+2. Asks them to propose comparison scores for criteria pairs
+3. Keep it natural and focused on the task (pairwise comparison)
+
+**GOOD Examples:**
+- "{lead_agent['name']}에게 물어볼게. 이제 기준들을 서로 비교해볼까? 네 관점에서 점수를 매겨봐."
+- "좋아, {lead_agent['name']} 차례야. 각 기준 쌍의 중요도를 비교해줘."
+- "{lead_agent['name']}, 네 차례야. 기준들의 상대적 중요도를 평가해줘."
+
+**ALL output MUST be in Korean.**
+"""
+    
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    response = llm.invoke(messages)
+    
+    return {
+        "turn": len(debate_history) + 1,
+        "phase": f"Phase {phase}: {lead_agent['name']} 주도권",
+        "speaker": "Director",
+        "type": "phase_intro",
+        "target": lead_agent['name'],
+        "content": response.content,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+def _director_phase_summary(state, finished_agent, next_agent, phase, debate_history):
+    """Director가 각 Phase 종료 시 정리 및 다음 Agent 소개"""
+    llm = ChatOpenAI(model=Config.OPENAI_MODEL, temperature=0.7, api_key=Config.OPENAI_API_KEY)
+    
+    current_phase_turns = [t for t in debate_history if f"Phase {phase}" in t.get('phase', '')]
+    phase_summary = "\n".join([f"[{t['speaker']}]: {t['content'][:100]}..." for t in current_phase_turns[-4:]])
+    
+    system_prompt = """You are a friendly debate moderator."""
+    
+    user_prompt = f"""
+{finished_agent['name']} finished their pairwise comparison proposal.
+
+Recent discussion:
+{phase_summary}
+
+Next agent: {next_agent['name']}
+
+**Write a concise summary (1 sentence) that:**
+1. Summarizes ONLY {finished_agent['name']}'s SPECIFIC comparison approach or key scores (use concrete examples)
+2. Keep it brief and focused on what was discussed
+3. Do NOT introduce or mention {next_agent['name']} - they will be introduced separately
+
+**Tone:** Casual moderator
+**Length:** 50-80 characters
+
+**GOOD Example:**
+"{finished_agent['name']}는 '경제성 vs 창의성'을 3.0으로 평가했네."
+
+**ALL output MUST be in Korean.**
+"""
+    
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    response = llm.invoke(messages)
+    
+    return {
+        "turn": len(debate_history) + 1,
+        "phase": f"Phase {phase}: {finished_agent['name']} 주도권",
+        "speaker": "Director",
+        "type": "phase_summary",
+        "target": next_agent['name'],
+        "content": response.content,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+def _director_pre_decision_transition(state, personas, debate_history):
+    """Director가 최종 결정 전 의견 취합을 알리는 멘트"""
+    llm = ChatOpenAI(model=Config.OPENAI_MODEL, temperature=0.7, api_key=Config.OPENAI_API_KEY)
+    
+    agent_names = [p['name'] for p in personas]
+    
+    system_prompt = """You are a professional debate moderator wrapping up the discussion."""
+    
+    user_prompt = f"""
+All three agents ({', '.join(agent_names)}) have finished presenting their pairwise comparison perspectives.
+
+**Write a brief transition statement that:**
+1. Acknowledges that you've heard all agents' opinions
+2. Announce that you will now synthesize their input to make a final decision
+3. Keep it concise and professional
+
+**Tone:** Moderator wrapping up discussion
+**Length:** 50-80 characters
+
+**GOOD Examples:**
+- "모든 에이전트들의 의견을 잘 들었어. 이제 의견을 취합해서 최종 비교표를 정하겠어."
+- "좋아, 세 명의 관점을 모두 들었네. 이제 종합해서 결정을 내려볼게."
+- "다들 좋은 의견 고마워. 지금부터 최종 가중치를 산출하겠어."
+
+**ALL your output MUST be in Korean.**
+"""
+    
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    response = llm.invoke(messages)
+    
+    return {
+        "turn": len(debate_history) + 1,
+        "phase": "Phase 3 종료",
+        "speaker": "Director",
+        "type": "phase_summary",
+        "target": None,
+        "content": response.content,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
 def _agent_propose_comparisons(state, agent, criteria, pairs, turn, phase):
     """Agent가 전체 쌍대비교표 제안"""
     llm = ChatOpenAI(

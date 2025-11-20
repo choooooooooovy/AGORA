@@ -1,18 +1,8 @@
 "use client";
 
 import { Card, CardContent } from "./ui/card";
-import { UIAgent, Round1Result, Round2Result, Round3Result, SelectedCriterion } from "@/lib/types";
+import { UIAgent, Round1Result, Round2Result, Round3Result, SelectedCriterion, Message } from "@/lib/types";
 import { useState, useEffect, useRef } from "react";
-
-interface Message {
-  id: number;
-  agentId: number;
-  agentName: string;
-  agentAvatar: string;
-  agentColor: string;
-  content: string;
-  timestamp: string;
-}
 
 interface AgentConversationProps {
   agents: UIAgent[];
@@ -120,6 +110,7 @@ export function AgentConversation({
             minute: '2-digit',
             hour12: true
           }),
+          type: turn.type as Message['type'],
         };
       });
 
@@ -215,7 +206,7 @@ export function AgentConversation({
                   <p className="text-xs text-[#9ca6ba] truncate">{agent.perspective}</p>
                 </div>
               </div>
-              <p className="mt-2 text-sm text-[#9ca6ba] leading-relaxed line-clamp-3">
+              <p className="mt-2 text-sm text-[#9ca6ba] leading-relaxed">
                 {agent.personality}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
@@ -289,7 +280,7 @@ export function AgentConversation({
               <div className="flex h-10 w-10 shrink-0 items-center justify-center">
                 <div className="h-2 w-2 animate-pulse rounded-full bg-[#FF1F55]"></div>
               </div>
-              <p className="text-sm text-[#9ca6ba]">입력 중...</p>
+              <p className="text-sm text-[#9ca6ba] pt-2">입력 중...</p>
             </div>
           )}
 
@@ -307,32 +298,33 @@ export function AgentConversation({
               {currentSubStep === 3 && "의사결정 매트릭스"}
             </h3>
 
-            {/* Round 1: Selected Criteria */}
-            {currentSubStep === 1 && round1Data && round1Data.round1_director_decision && round1Data.round1_director_decision.selected_criteria && (
-              <div className="space-y-2">
-                {round1Data.round1_director_decision.selected_criteria.map((criterion: SelectedCriterion, index: number) => (
-                  <div
-                    key={index}
-                    className="rounded-lg border border-[#3b4354] bg-[#1b1f27] p-2.5"
-                  >
-                    <div className="flex items-start gap-2">
-                      <span className="text-green-400 shrink-0">✓</span>
-                      <div className="flex-1">
-                        <p className="font-semibold text-white text-base leading-snug">{criterion.name}</p>
-                        <p className="mt-1 text-xs text-[#9ca6ba] leading-relaxed">{criterion.description}</p>
+            {/* Round 1: Selected Criteria - Only show after Director's final decision is displayed */}
+            {currentSubStep === 1 && round1Data && round1Data.round1_director_decision && round1Data.round1_director_decision.selected_criteria &&
+              displayedMessages.some(msg => msg.type === 'final_decision') && (
+                <div className="space-y-2">
+                  {round1Data.round1_director_decision.selected_criteria.map((criterion: SelectedCriterion, index: number) => (
+                    <div
+                      key={index}
+                      className="rounded-lg border border-[#3b4354] bg-[#1b1f27] p-2.5"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="text-green-400 shrink-0">✓</span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-white text-base leading-snug">{criterion.name}</p>
+                          <p className="mt-1 text-xs text-[#9ca6ba] leading-relaxed">{criterion.description}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-                {round1Data.round1_director_decision.selected_criteria.length > 0 && (
-                  <div className="mt-3 rounded-lg border border-purple-500/30 bg-purple-500/10 p-2.5">
-                    <p className="text-xs text-purple-300">
-                      ✓ {round1Data.round1_director_decision.selected_criteria.length}개 기준 모두 에이전트 합의를 통해 선정되었습니다
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+                  ))}
+                  {round1Data.round1_director_decision.selected_criteria.length > 0 && (
+                    <div className="mt-3 rounded-lg border border-purple-500/30 bg-purple-500/10 p-2.5">
+                      <p className="text-xs text-purple-300">
+                        ✓ {round1Data.round1_director_decision.selected_criteria.length}개 기준 모두 에이전트 합의를 통해 선정되었습니다
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
             {/* Round 1: Loading or No Data */}
             {currentSubStep === 1 && !round1Data && (

@@ -46,6 +46,10 @@ def run_round1_debate(state: Dict[str, Any]) -> Dict[str, Any]:
     for phase_idx, lead_agent in enumerate(personas, 1):
         other_agents = [p for p in personas if p['name'] != lead_agent['name']]
         
+        # Director 도입 발언 (Phase 시작)
+        intro_turn = _director_phase_intro(state, lead_agent, phase_idx, debate_turns)
+        debate_turns.append(intro_turn)
+        
         # Turn 1: Lead agent proposal
         proposal_turn = _agent_propose(state, lead_agent, len(debate_turns) + 1, phase_idx)
         debate_turns.append(proposal_turn)
@@ -64,6 +68,15 @@ def run_round1_debate(state: Dict[str, Any]) -> Dict[str, Any]:
             len(debate_turns) + 1, phase_idx, debate_turns
         )
         debate_turns.append(answer_turn)
+        
+        # Director 정리 발언 (Phase 종료, 마지막 Phase 제외)
+        if phase_idx < 3:
+            summary_turn = _director_phase_summary(state, lead_agent, personas[phase_idx], phase_idx, debate_turns)
+            debate_turns.append(summary_turn)
+    
+    # Director 의견 취합 멘트 (최종 결정 전)
+    transition_turn = _director_pre_decision_transition(state, personas, debate_turns)
+    debate_turns.append(transition_turn)
     
     # Phase 4: Director final decision
     director_turn = _director_final_decision(state, personas, debate_turns)
@@ -77,7 +90,166 @@ def run_round1_debate(state: Dict[str, Any]) -> Dict[str, Any]:
     return state
 
 
-# Helper functions will be added next
+# Helper functions
+
+def _director_phase_intro(
+    state: Dict[str, Any],
+    lead_agent: Dict[str, Any],
+    phase: int,
+    debate_history: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """Director가 각 Phase 시작 시 도입 발언"""
+    llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
+    
+    phase_names = ["첫 번째", "두 번째", "세 번째"]
+    
+    system_prompt = """You are a friendly and engaging debate moderator.
+Your role is to smoothly introduce each agent's turn and keep the conversation flowing naturally."""
+    
+    user_prompt = f"""
+This is the {phase_names[phase-1]} agent's turn to lead the discussion about evaluation criteria for major selection.
+
+Agent to introduce: {lead_agent['name']}
+Perspective: {lead_agent.get('perspective', 'Core perspective')}
+
+**Write a brief, friendly introduction that:**
+1. If first turn: Naturally start the criteria discussion
+2. If not first turn: Acknowledge previous discussion briefly
+3. Introduce {lead_agent['name']} WITHOUT repeating their perspective keywords
+4. Ask them to propose evaluation criteria (NOT "solve problems" or similar)
+
+**Tone:** Casual and friendly moderator
+**Length:** 60-100 characters
+
+**GOOD Examples:**
+- "자, 이제 평가 기준을 정해볼까? {lead_agent['name']}에게 먼저 의견을 물어볼게."
+- "좋아. 다음은 {lead_agent['name']} 차례야. 어떤 기준으로 학과를 평가하면 좋을지 말해줘."
+- "{lead_agent['name']}, 이제 네 차례야. 네 관점에서 어떤 평가 기준이 필요할 것 같아?"
+
+**BAD Examples (DON'T use):**
+- "논리적 사고로 문제를 풀어볼까?" (X - 토론 목적과 맞지 않음)
+- "미적 감각에 대해 이야기해줘" (X - perspective 키워드 그대로 반복)
+- "{lead_agent['name']}야, ~" (X - 호칭이 부자연스러움)
+
+**ALL your output MUST be in Korean.**
+"""
+    
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    response = llm.invoke(messages)
+    
+    return {
+        "turn": len(debate_history) + 1,
+        "phase": f"Phase {phase}: {lead_agent['name']} 주도권",
+        "speaker": "Director",
+        "type": "phase_intro",
+        "target": lead_agent['name'],
+        "content": response.content,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+def _director_phase_summary(
+    state: Dict[str, Any],
+    finished_agent: Dict[str, Any],
+    next_agent: Dict[str, Any],
+    phase: int,
+    debate_history: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """Director가 각 Phase 종료 시 정리 및 다음 Agent 소개"""
+    llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
+    
+    # 현재 Phase의 주요 내용 추출
+    current_phase_turns = [t for t in debate_history if f"Phase {phase}" in t.get('phase', '')]
+    phase_summary = "\n".join([f"[{t['speaker']}]: {t['content'][:100]}..." for t in current_phase_turns[-4:]])
+    
+    system_prompt = """You are a friendly debate moderator.
+Your role is to briefly summarize what was discussed and smoothly transition to the next agent."""
+    
+    user_prompt = f"""
+{finished_agent['name']} just finished presenting their perspective on evaluation criteria.
+
+Recent discussion:
+{phase_summary}
+
+Next agent: {next_agent['name']}
+
+**Write a concise summary (1 sentence) that:**
+1. Summarizes ONLY {finished_agent['name']}'s SPECIFIC proposed criteria or main argument (use concrete terms from discussion)
+2. Keep it brief and focused on what was discussed
+3. Do NOT introduce or mention {next_agent['name']} - they will be introduced separately
+
+**Tone:** Casual moderator
+**Length:** 50-80 characters
+
+**GOOD Examples:**
+- "{finished_agent['name']}는 데이터 기반 의사결정 능력을 핵심 기준으로 제안했어."
+- "{finished_agent['name']}가 학문적 깊이와 연구 기회를 강조했네."
+- "{finished_agent['name']}는 창의적 문제 해결 역량을 중요하게 봤어."
+
+**BAD Examples (DON'T use):**
+- "{finished_agent['name']}는 중요성을 강조했네" (X - 너무 추상적, 구체적인 기준명 없음)
+- "{finished_agent['name']}가 좋은 의견을 냈어. 이제 {next_agent['name']}야~" (X - 다음 agent 언급 금지)
+
+**ALL your output MUST be in Korean.**
+"""
+    
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    response = llm.invoke(messages)
+    
+    return {
+        "turn": len(debate_history) + 1,
+        "phase": f"Phase {phase}: {finished_agent['name']} 주도권",
+        "speaker": "Director",
+        "type": "phase_summary",
+        "target": next_agent['name'],
+        "content": response.content,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+def _director_pre_decision_transition(
+    state: Dict[str, Any],
+    personas: List[Dict[str, Any]],
+    debate_history: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """Director가 최종 결정 전 의견 취합을 알리는 멘트"""
+    llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
+    
+    agent_names = [p['name'] for p in personas]
+    
+    system_prompt = """You are a professional debate moderator wrapping up the discussion."""
+    
+    user_prompt = f"""
+All three agents ({', '.join(agent_names)}) have finished presenting their perspectives on evaluation criteria.
+
+**Write a brief transition statement that:**
+1. Acknowledges that you've heard all agents' opinions
+2. Announce that you will now synthesize their input to make a final decision
+3. Keep it concise and professional
+
+**Tone:** Moderator wrapping up discussion
+**Length:** 50-80 characters
+
+**GOOD Examples:**
+- "모든 에이전트들의 의견을 잘 들었어. 이제 의견을 취합해서 최종 기준을 정하겠어."
+- "좋아, 세 명의 관점을 모두 들었네. 이제 종합해서 결정을 내려볼게."
+- "다들 좋은 의견 고마워. 지금부터 최종 평가 기준을 선정하겠어."
+
+**ALL your output MUST be in Korean.**
+"""
+    
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    response = llm.invoke(messages)
+    
+    return {
+        "turn": len(debate_history) + 1,
+        "phase": "Phase 3 종료",
+        "speaker": "Director",
+        "type": "phase_summary",
+        "target": None,
+        "content": response.content,
+        "timestamp": datetime.now().isoformat()
+    }
 
 
 def _agent_propose(
@@ -189,17 +361,22 @@ Stance: {questioner['debate_stance']}
 2. Ask based on your perspective (persona).
 3. Check if the measurement method is specific, valid, and feasible.
 
-**Question Strategy - Use diverse patterns:**
-Pattern 1 - Point out weakness: "○○야, 근데 그 기준은 [약점] 문제가 있지 않아?"
-Pattern 2 - Suggest alternative: "그것보다 [대안]이 더 중요한 것 같은데?"
-Pattern 3 - Request evidence: "그게 실제로 효과 있다는 근거가 있어?"
-Pattern 4 - Challenge assumption: "왜 [전제]라고 생각하는 거야?"
-Pattern 5 - Raise counter-case: "만약 [반례 상황]이면 어떻게 돼?"
+**Critique Strategy - Use diverse patterns with evidence:**
+Pattern 1 - Point out weakness with data: "○○에게 묻고 싶은데, 그 기준은 [구체적 약점]이 있어. 실제로 [데이터/사례]를 보면..."
+Pattern 2 - Suggest alternative with reasoning: "그것보다 [대안]이 더 중요해. 왜냐하면 사용자가 '[키워드]'를 강조했잖아."
+Pattern 3 - Challenge with counter-evidence: "근데 [연구/통계]에 따르면 [반대 사실]인데, 어떻게 생각해?"
+Pattern 4 - Raise limitation: "만약 [상황]이면 그 기준으로는 [한계]가 드러나지 않을까?"
+Pattern 5 - Request specific measurement: "그걸 어떻게 객관적으로 측정할 건데? 구체적인 방법이 있어?"
 
-**DON'T repeat** the same pattern like "너 말도 맞는데..."
-**DO use** varied questioning styles to create dynamic debate
+**CRITICAL Requirements:**
+- Include specific evidence, data, or user keywords in EVERY question
+- Provide reasoning for your challenge
+- Make it substantial, not just a simple doubt
 
-Write about 80-120 characters.
+**Length:** 100-150 characters (longer than before for better quality)
+
+**DON'T:** "근데 창의적 표현은 왜 고려 안 해?" (too short, no evidence)
+**DO:** "근데 창의적 표현도 중요하지 않아? 사용자가 '디자인'을 여러 번 언급했는데, 그 부분을 어떻게 평가할 건지 궁금해."
 
 **Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
 **ALL your output MUST be in Korean.**
@@ -308,7 +485,8 @@ Pattern 5 - Partial Agreement + Emphasis: "맞아, [일부 동의]. 그렇지만
 def _director_final_decision(
     state: Dict[str, Any],
     personas: List[Dict[str, Any]],
-    debate_history: List[Dict[str, Any]]
+    debate_history: List[Dict[str, Any]],
+    add_transition: bool = True
 ) -> Dict[str, Any]:
     """Director가 토론 내용을 바탕으로 최종 기준 선정"""
     llm = ChatOpenAI(model="gpt-4o", temperature=0.0)

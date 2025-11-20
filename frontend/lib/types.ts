@@ -201,5 +201,5 @@ export interface Message {
   agentColor: string;
   content: string;
   timestamp: string;
-  type?: "proposal" | "question" | "answer" | "debate" | "decision";
+  type?: "proposal" | "question" | "answer" | "debate" | "decision" | "final_decision";
 }

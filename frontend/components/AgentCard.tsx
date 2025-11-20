@@ -33,7 +33,7 @@ export function AgentCard({ agent, index }: AgentCardProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-3 pb-3 space-y-2.5">
+        <CardContent className="space-y-2.5">
           <div>
             <h4 className="text-sm mb-1.5 flex items-center gap-1.5 text-white">
               <span className="material-symbols-outlined text-sm">auto_awesome</span>

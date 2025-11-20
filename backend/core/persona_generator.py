@@ -199,11 +199,15 @@ and generate 3 Agents that represent each perspective.
   * Examples: "경제적 성공과 빠른 성장", "사회적 영향력과 의미", "지속 가능한 행복"
   
 - **persona_description**: Agent's identity and philosophy (Korean, 200-400 characters)
-  * Why does this perspective matter?
+  * **CRITICAL: DO NOT mention specific major names (e.g., "컴퓨터공학", "경영학") at all**
+  * Focus ONLY on the user's characteristics, traits, and values
+  * Why does this perspective matter for someone with these characteristics?
   * How does this Agent interpret the user's interests/aptitudes/values?
-  * Why is this perspective prioritized over others?
+  * What kind of criteria/environment would suit someone with these traits?
   * Write specifically and persuasively
   * Directly quote or reference the user's text
+  * Example (GOOD): "사용자는 '논리적 분석'을 즐기고 '체계적 사고'에 강점이 있다. 이런 특성을 가진 사람에게는 학문적 깊이와 분석적 역량을 키울 수 있는 환경이 중요하다."
+  * Example (BAD): "사용자는 논리적이므로 컴퓨터공학이 적합하다." ← Never do this!
   
 - **key_strengths**: Core strength keywords for this perspective (Korean, exactly 3)
   * Each keyword should be 2-5 characters
@@ -215,7 +219,9 @@ and generate 3 Agents that represent each perspective.
 - **debate_stance**: Core argument in debate (Korean, 50-100 characters)
   * Express core position in one sentence
   * Strong argument that can conflict with other Agents
-  * Provide specific major selection criteria
+  * **DO NOT mention specific majors** - focus on evaluation criteria types
+  * Example (GOOD): "학문적 깊이와 연구 기회를 최우선으로 평가해야 한다"
+  * Example (BAD): "컴퓨터공학을 선택해야 한다" ← Never do this!
 
 **Important Notes:**
 1. Output in valid JSON format only (no code blocks)
@@ -223,7 +229,8 @@ and generate 3 Agents that represent each perspective.
 3. Must have exactly 3 Agents
 4. Include all fields without omission
 5. Deeply analyze user text to find **real inherent conflicts**
-6. **ALL field values (perspective, persona_description, key_strengths, debate_stance) MUST be written in Korean**
+6. **CRITICAL: Never mention specific major names in persona_description or debate_stance**
+7. **ALL field values (perspective, persona_description, key_strengths, debate_stance) MUST be written in Korean**
 """
 
 
