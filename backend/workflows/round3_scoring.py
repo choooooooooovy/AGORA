@@ -217,6 +217,13 @@ Evidence (following 3 required):
 **[전공명] - [기준명]: [점수]**
 근거: [사용자 키워드 인용] + [전공의 구체적 특성] + [점수 산정 논리]
 
+**Evaluation Style - Use diverse patterns:**
+Pattern 1 - Strong match: "사용자의 '[특성]'은 이 전공의 '[특성]'과 완벽하게 매칭돼..."
+Pattern 2 - Data-driven: "실제로 [통계/연구]를 보면 이 전공은..."
+Pattern 3 - Comparative: "다른 전공들과 비교하면 이 전공은..."
+Pattern 4 - Limitation awareness: "사용자가 '[특성]'을 원하지만, 이 전공은 [한계]가 있어서..."
+Pattern 5 - Potential-based: "사용자의 '[적성]' 능력이 있으면 이 전공에서..."
+
 **작성 예시:**
 
 **컴퓨터공학 - 학문적 깊이와 연구 기회: 7.5**
@@ -306,6 +313,13 @@ def _agent_critique(state, critic, target_agent, proposal_turn, turn, phase, deb
 
 **Critique Target:** Select 2-3 (major-criterion) pairs
 
+**Critique Strategy - Use diverse patterns:**
+Pattern 1 - Point out overrating: "○○야, [전공]-[기준] 점수가 너무 높은 것 같아. 사용자가 '[키워드]'를 언급했는데 이 전공은..."
+Pattern 2 - Point out underrating: "그 점수는 좀 낮은데? 실제로 [통계/데이터]를 보면..."
+Pattern 3 - Challenge logic: "만약 [전제]라면, [결론] 점수가 나와야 하는데 왜 [현재 점수]야?"
+Pattern 4 - Comparative critique: "다른 전공들과 비교하면 이 점수는..."
+Pattern 5 - Missing perspective: "네 관점에서만 보고 [각도]를 놓친 것 같은데?"
+
 **For each critique, use this structure (mandatory):**
 
 **[Major Name] - [Criterion Name]**
@@ -381,11 +395,21 @@ Critiques on your Decision Matrix proposal:
 
 **Based on your perspective ({defender.get('perspective', '핵심 관점')}), counter-argue.**
 
+**Defense Strategy - Use diverse patterns:**
+Pattern 1 - Present overlooked evidence: "○○야, 네가 놓친 게 있어. 사용자가 '[키워드]'도 언급했거든..."
+Pattern 2 - Reinterpret same data: "그 데이터를 다르게 해석하면..."
+Pattern 3 - Emphasize long-term view: "단기적으로는 그렇지만, 사용자의 5년 후를 생각하면..."
+Pattern 4 - Counter with statistics: "실제 [통계]를 보면 내 점수가 합리적이야..."
+Pattern 5 - Acknowledge + redirect: "그 부분은 맞아. 하지만 더 중요한 건 사용자의 '[핵심 가치]'인데..."
+
 For each critic:
 - Why is your score reasonable?
 - What did the critics miss?
 
 Defend logically in 150-250 characters.
+
+**DON'T** use the same defense pattern for every rebuttal
+**DO** provide concrete evidence while varying your argumentation style
 
 **Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
 **ALL your output MUST be in Korean.**

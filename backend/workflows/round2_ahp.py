@@ -238,11 +238,23 @@ For each pair, judge "How much more important is A than B?"
 - "Economic success vs Work-life balance": Those wanting fast growth prioritize economic success → 2.5
 - "Work-life balance vs Social contribution": Those valuing sustainability prioritize work-life balance → 3.0
 
-Briefly explain only 3-4 key comparisons, then provide **all {len(pairs)} pairs** comparison table in JSON format at the end:
+**How to present your evaluation:**
+1. Explain 3-4 key comparisons naturally in conversation style
+2. Connect to user's specific characteristics (quote their words)
+3. Provide concrete evidence for each score
+4. At the end, provide **all {len(pairs)} pairs** in JSON format
+
+**Conversation Pattern Examples:**
+- "내 관점에서 보면 [기준A]가 [기준B]보다 훨씬 중요해. 왜냐하면 사용자가 '[키워드]'라고 했잖아..."
+- "[기준A] vs [기준B]는 솔직히 비슷한 수준이야. 둘 다 [이유]..."
+- "[기준A]는 [기준B]의 3배 정도 중요하다고 봐. 실제로 [데이터/사례]..."
 
 ```json
 {{"comparison_matrix": {{"기준A vs 기준B": number, ...}}}}
 ```
+
+**DON'T** write mechanically like a report
+**DO** speak naturally while including evidence and reasoning
 
 **Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
 **ALL your output (explanations and JSON keys) MUST be in Korean.**
@@ -300,20 +312,23 @@ Point out 2-3 most problematic pairs, and for each must include:
 ❌ Bad rebuttal: "This score is overrated" (no evidence)
 ✅ Good rebuttal: "3.0 is overrated. User used the word 'sustainable', which means valuing work-life balance, so 1.5 is appropriate"
 
-Point out 2-3 most problematic pairs while:
-- Why the score is not appropriate
-- What score is more reasonable from your perspective **(suggest in 0.5 increments)**
-  
+**Critique Strategy - Use diverse patterns:**
+Pattern 1 - Point out missed evidence: "○○야, 근데 사용자가 '[키워드]'를 3번이나 언급했어. 그럼 [점수] 정도는 되어야지"
+Pattern 2 - Challenge with data: "그 점수는 좀 이상한데? [통계/사례]를 보면..."
+Pattern 3 - Contrast perspectives: "네 관점에선 그럴 수 있지만, [다른 각도]에서 보면..."
+Pattern 4 - Logical contradiction: "만약 [전제]라면, [모순] 문제가 생기는데?"
+Pattern 5 - Suggest alternative: "차라리 [대안 점수]가 더 합리적일 것 같아. 왜냐하면..."
+
 **Score Selection Guide:**
   1.0-2.0: Subtle difference 
   2.5-4.0: Noticeable difference
   4.5-6.5: Overwhelming difference
   7.0-9.0: Extreme difference (very rare)
-  
-  e.g., "This pair should be around 6.5 (extremely important)"
-       "Evaluating as 1.5 (very slight difference) is reasonable"
 
 Rebut logically in 150-250 characters.
+
+**DON'T** use the same critique pattern repeatedly
+**DO** vary your argumentation style while providing concrete evidence
 
 **Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
 **ALL your output MUST be in Korean.**
@@ -367,7 +382,14 @@ For each rebuttal, must include:
    - Point out keywords or context they missed
    - Rebut with numbers (e.g., "3 mentions vs 1 mention", "70% vs 30%", etc.)
 
-Example:
+**Defense Strategy - Use diverse patterns:**
+Pattern 1 - Counter with different evidence: "○○야, 네 말도 맞는데 [다른 증거]도 봐봐. 사용자가..."
+Pattern 2 - Show bigger context: "단기적으로는 그렇지만, 장기적으로 보면..."
+Pattern 3 - Reinterpret same data: "그 키워드를 다르게 해석하면..."
+Pattern 4 - Numerical rebuttal: "사용자는 'A'를 3번, 'B'를 1번 언급했어. 3:1 비율이면..."
+Pattern 5 - Acknowledge + redirect: "그 부분은 인정해. 하지만 더 중요한 건..."
+
+**Example:**
 "{critics[0]['name']}가 워라밸을 강조했지만, 사용자는 '높은 연봉'을 3번, '빠른 성장'을 2번 언급한 반면 '워라밸'은 1번만 언급했어. 이건 5:1 비율로 경제적 성장을 우선시한다는 뜻이야"
 
 While mentioning each rebuttor:
@@ -375,6 +397,9 @@ While mentioning each rebuttor:
 - What the rebuttors missed in their arguments
 
 Defend logically in 150-250 characters.
+
+**DON'T** use the same defense pattern for every rebuttal
+**DO** vary your argumentation while staying consistent to your perspective
 
 **Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
 **ALL your output MUST be in Korean.**

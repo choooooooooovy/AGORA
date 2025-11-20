@@ -16,8 +16,8 @@ export function AgentCard({ agent, index }: AgentCardProps) {
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.15, duration: 0.4 }}
     >
-      <Card className="overflow-hidden bg-[#1b1f27] border-[#3b4354] py-0 gap-0">
-        <CardHeader className={`${agent.color} text-white pb-4 pt-6`}>
+      <Card className="overflow-hidden bg-[#1b1f27] border-[#3b4354] pt-0">
+        <CardHeader className={`${agent.color} text-white pb-3 pt-4`}>
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10 border-2 border-white/20">
               <AvatarFallback className="bg-white/10 text-white text-sm">
@@ -33,7 +33,7 @@ export function AgentCard({ agent, index }: AgentCardProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-4 space-y-3 py-4">
+        <CardContent className="pt-3 pb-3 space-y-2.5">
           <div>
             <h4 className="text-sm mb-1.5 flex items-center gap-1.5 text-white">
               <span className="material-symbols-outlined text-sm">auto_awesome</span>

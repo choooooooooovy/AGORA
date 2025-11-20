@@ -117,15 +117,20 @@ User Information:
 3. Interpret the user's interests/aptitudes/values from your viewpoint.
 4. Explain concretely how to measure this criterion.
 
-Answer in this format:
----
-제안 기준: [Criterion name]
+**How to structure your proposal:**
+Express naturally in conversational style. Include these elements:
+- What criterion you're proposing (name it clearly)
+- Why it matters from YOUR perspective (refer to user's traits)
+- How this criterion can be evaluated (mention concrete indicators)
+- Provide specific examples or data if possible
 
-중요성: [Explain in 200+ characters why this is important from your perspective]
+**Example structure (but write naturally, not mechanically):**
+"내 관점에서 보면 '[기준명]'이 정말 중요해. 왜냐하면 [사용자 특성 연결]... 
+이걸 평가하려면 [구체적 지표들]을 보면 돼. 예를 들어 [실제 예시나 데이터]..."
 
-측정 방법: [3+ ways to objectively evaluate this criterion]
-
----
+**Length:** About 200-300 characters
+**DON'T** use rigid formats like "측정 방법: 1. 2. 3."
+**DO** speak naturally while including all necessary information
 
 **Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
 **ALL your output MUST be in Korean.**
@@ -184,15 +189,19 @@ Stance: {questioner['debate_stance']}
 2. Ask based on your perspective (persona).
 3. Check if the measurement method is specific, valid, and feasible.
 
-Question Writing Guide:
-- Point out conflicts with your perspective
-- Request alternative measurement methods or identify problems
-- Suggest priorities from a different viewpoint
+**Question Strategy - Use diverse patterns:**
+Pattern 1 - Point out weakness: "○○야, 근데 그 기준은 [약점] 문제가 있지 않아?"
+Pattern 2 - Suggest alternative: "그것보다 [대안]이 더 중요한 것 같은데?"
+Pattern 3 - Request evidence: "그게 실제로 효과 있다는 근거가 있어?"
+Pattern 4 - Challenge assumption: "왜 [전제]라고 생각하는 거야?"
+Pattern 5 - Raise counter-case: "만약 [반례 상황]이면 어떻게 돼?"
 
-Write about 100-150 characters.
+**DON'T repeat** the same pattern like "너 말도 맞는데..."
+**DO use** varied questioning styles to create dynamic debate
+
+Write about 80-120 characters.
 
 **Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
-Examples: "그건 좀 이상한데?", "근데 그렇게 하면...", "○○야, 그건 어떻게..."
 **ALL your output MUST be in Korean.**
 """
     
@@ -253,23 +262,32 @@ Your friends asked these questions about your proposal:
 2. **Clearly** defend your perspective (persona).
 3. Explain concretely why the measurement method is valid and feasible.
 
-Answer Guide:
-- Mention each questioner by name when answering
-- Provide evidence for why your core values should be prioritized
-- Present specific research results or statistical evidence
-- About 200-300 characters
+**Answer Strategy - Diverse response patterns:**
+Pattern 1 - Acknowledge + Counterargument: "○○야, 네 말도 일리 있어. 근데 [반박]..."
+Pattern 2 - Provide Evidence: "사실 [연구/통계/사례]를 보면..."
+Pattern 3 - Show Bigger Picture: "그건 단기적으로는 맞는데, 장기적으로 보면..."
+Pattern 4 - Turn Question Around: "오히려 그래서 내 기준이 더 중요한 거야. 왜냐하면..."
+Pattern 5 - Partial Agreement + Emphasis: "맞아, [일부 동의]. 그렇지만 핵심은 [강조]..."
 
-Answer in this format:
+**Answer each questioner separately**, mentioning their name.
+**Provide concrete evidence**: research findings, statistics, real-world cases, logical reasoning.
+**Length:** About 150-200 characters per person (total 300-400 characters)
+
+**Answer in this format:**
 ---
 [Questioner name]야:
-[Answer content]
+[Answer content with evidence]
 
 [Questioner name]야:
-[Answer content]
+[Answer content with evidence]
 ---
+
+**DON'T** start every answer with "너 말도 맞는데..."
+**DO** vary your response style while staying in character
+**DON'T** use mechanical formats
+**DO** write as natural conversation
 
 **Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
-Examples: "그건 이렇게 보면 돼", "솔직히 말하면...", "네 말도 맞는데..."
 **ALL your output MUST be in Korean.**
 """
     
@@ -316,13 +334,20 @@ The following is the content of a 12-turn debate about evaluation criteria for m
 
 ---
 
-**Mission: Based on the above debate content, select the final {max_criteria} evaluation criteria.**
+**Mission: Based on the above debate content, select the final 3 evaluation criteria.**
 
 Selection Principles:
 1. Balance the core values of the three experts
 2. Measurable and specific criteria
 3. Criteria that provide practical help for the user's major selection
-4. Independent criteria that don't overlap
+4. **Strictly independent** criteria that don't overlap or duplicate
+5. **Remove any criteria that are too similar** (e.g., if two criteria essentially measure the same thing, keep only the stronger one)
+6. Prioritize criteria that had **strong evidence or concrete examples** in the debate
+
+**Quality Check:**
+- Are all 3 criteria truly different from each other?
+- Can each criterion be measured objectively?
+- Does each criterion reflect the user's characteristics?
 
 Answer in the following JSON format:
 ```json

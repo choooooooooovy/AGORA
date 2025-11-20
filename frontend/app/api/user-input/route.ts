@@ -60,19 +60,37 @@ export async function POST(request: NextRequest) {
 
     console.log(`[API] User input saved: ${filePath}`);
 
-    // Execute Round 1 debate (in background - don't wait for it)
-    // In a real app, you might want to use a job queue here
-    executePythonScript("scripts/round1_debate.py", {
-      "session-id": sessionId,
-    }).catch((error) => {
-      console.error("[API] Round 1 execution failed:", error);
-    });
+    // Execute persona generation only (fast, ~5 seconds)
+    const personaResult = await executePythonScript("generate_personas.py", sessionId);
 
-    return NextResponse.json({
-      success: true,
-      message: "User input received and Round 1 initiated",
-      sessionId,
-    });
+    if (!personaResult.success) {
+      console.error("[API] Persona generation failed:", personaResult.error);
+      return NextResponse.json(
+        { error: "Failed to generate agent personas" },
+        { status: 500 }
+      );
+    }
+
+    // Read persona output
+    const { readFile: readFilePromise } = await import("fs/promises");
+    const personaOutputPath = path.join(backendPath, "output", `personas_${sessionId}.json`);
+
+    try {
+      const personaData = JSON.parse(await readFilePromise(personaOutputPath, "utf-8"));
+
+      return NextResponse.json({
+        success: true,
+        message: "User input received and personas generated",
+        session_id: sessionId,
+        agent_personas: personaData.agent_personas || [],
+      });
+    } catch (error) {
+      console.error("[API] Failed to read persona output:", error);
+      return NextResponse.json(
+        { error: "Persona generation completed but failed to read results" },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error("Error in user-input API:", error);
     return NextResponse.json(

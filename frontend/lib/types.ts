@@ -1,7 +1,3 @@
-/**
- * 백엔드 출력 구조와 정확히 일치하는 TypeScript 타입 정의
- */
-
 // ============================================================================
 // Agent Persona Types
 // ============================================================================
@@ -46,7 +42,7 @@ export interface DebateTurn {
   turn: number;
   phase: string;
   speaker: string;
-  type: "proposal" | "question" | "answer" | "debate" | "decision";
+  type: "proposal" | "question" | "answer" | "debate" | "decision" | "final_decision";
   target: string | string[] | null;
   content: string;
   timestamp: string;
@@ -57,19 +53,20 @@ export interface DebateTurn {
 // ============================================================================
 
 export interface SelectedCriterion {
-  criterion: string;
+  name: string;
   description: string;
+  source_agent?: string;
+  reasoning?: string;
 }
 
 export interface Round1DirectorDecision {
   selected_criteria: SelectedCriterion[];
-  rationale: string;
+  summary: string;
   timestamp: string;
 }
 
 export interface Round1Result {
   round1_debate_turns: DebateTurn[];
-  selected_criteria: SelectedCriterion[];
   round1_director_decision: Round1DirectorDecision;
 }
 

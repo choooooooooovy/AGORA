@@ -1,10 +1,8 @@
 "use client";
 
 import { Card, CardContent } from "./ui/card";
-import { UIAgent } from "@/lib/types";
-import { Badge } from "./ui/badge";
-import { useState, useEffect, useRef, useCallback } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { UIAgent, Round1Result, Round2Result, Round3Result, SelectedCriterion } from "@/lib/types";
+import { useState, useEffect, useRef } from "react";
 
 interface Message {
   id: number;
@@ -20,549 +18,278 @@ interface AgentConversationProps {
   agents: UIAgent[];
   candidateMajors: string[];
   currentSubStep: number;
+  round1Data: Round1Result | null;
+  round2Data: Round2Result | null;
+  round3Data: Round3Result | null;
+  isLoadingRound: boolean;
 }
 
 export function AgentConversation({
   agents,
-  candidateMajors,
   currentSubStep,
+  round1Data,
+  round2Data,
+  round3Data,
+  isLoadingRound,
 }: AgentConversationProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [typingAgentId, setTypingAgentId] = useState<number | null>(null);
-  const [isConversationComplete, setIsConversationComplete] = useState(false);
+  const [displayedMessages, setDisplayedMessages] = useState<Message[]>([]);
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+  const [totalMessages, setTotalMessages] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const allMessagesRef = useRef<Message[]>([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Mock conversation data based on sub-step
-  const getConversationForSubStep = useCallback((subStep: number): Message[] => {
-    const majorsText = candidateMajors.length > 0
-      ? candidateMajors.join(", ")
-      : "컴퓨터공학, 데이터사이언스, 철학";
-
-    // Round 1: Criteria Selection
-    const criteriaSelectionMessages: Message[] = [
-      {
-        id: 1,
-        agentId: 0,
-        agentName: "Director",
-        agentAvatar: "DR",
-        agentColor: "bg-gradient-to-br from-purple-500 to-purple-700",
-        content: `환영합니다. 오늘 우리는 사용자가 선택한 전공들(${majorsText})을 평가할 기준을 수립할 것입니다. 여러분의 관점에서 중요한 평가 기준을 제안해주세요.`,
-        timestamp: "10:00 AM",
-      },
-      {
-        id: 2,
-        agentId: 1,
-        agentName: agents[0]?.name || "Nova",
-        agentAvatar: agents[0]?.avatar || "NV",
-        agentColor: agents[0]?.color || "bg-gradient-to-br from-cyan-500 to-blue-600",
-        content: "저는 첫 번째 기준으로 '혁신 잠재력 및 창의적 표현'을 제안합니다. 각 전공이 새로운 아이디어를 실현할 수 있는 환경을 얼마나 제공하는지 평가하는 것이 중요합니다.",
-        timestamp: "10:02 AM",
-      },
-      {
-        id: 3,
-        agentId: 2,
-        agentName: agents[1]?.name || "Atlas",
-        agentAvatar: agents[1]?.avatar || "AT",
-        agentColor: agents[1]?.color || "bg-gradient-to-br from-emerald-500 to-teal-600",
-        content: "저는 '경제적 성장 잠재력'을 제안합니다. 졸업 후 예상 연봉, 취업률, 산업 성장률 등 객관적 지표가 필요합니다.",
-        timestamp: "10:04 AM",
-      },
-      {
-        id: 4,
-        agentId: 3,
-        agentName: agents[2]?.name || "Echo",
-        agentAvatar: agents[2]?.avatar || "EC",
-        agentColor: agents[2]?.color || "bg-gradient-to-br from-amber-500 to-orange-600",
-        content: "'워라밸과 지속 가능한 커리어 발전'도 중요합니다. 사용자가 장기적으로 행복하게 일할 수 있는지 평가해야 합니다.",
-        timestamp: "10:06 AM",
-      },
-      {
-        id: 5,
-        agentId: 1,
-        agentName: agents[0]?.name || "Nova",
-        agentAvatar: agents[0]?.avatar || "NV",
-        agentColor: agents[0]?.color || "bg-gradient-to-br from-cyan-500 to-blue-600",
-        content: "'사회적 영향력과 의미 있는 기여'를 추가하고 싶습니다. 이 전공이 세상에 긍정적인 변화를 만들 수 있는지가 중요합니다.",
-        timestamp: "10:08 AM",
-      },
-      {
-        id: 6,
-        agentId: 2,
-        agentName: agents[1]?.name || "Atlas",
-        agentAvatar: agents[1]?.avatar || "AT",
-        agentColor: agents[1]?.color || "bg-gradient-to-br from-emerald-500 to-teal-600",
-        content: "좋습니다. 마지막으로 '개인 적성 및 흥미 일치도'를 제안합니다. 사용자의 입력 데이터가 각 전공의 요구 역량과 얼마나 일치하는지 분석해야 합니다.",
-        timestamp: "10:10 AM",
-      },
-      {
-        id: 7,
-        agentId: 0,
-        agentName: "Director",
-        agentAvatar: "DR",
-        agentColor: "bg-gradient-to-br from-purple-500 to-purple-700",
-        content: "훌륭합니다. 5가지 평가 기준이 선정되었습니다:\n\n1. 혁신 잠재력 및 창의성\n2. 경제적 성장 잠재력\n3. 워라밸 & 지속가능성\n4. 사회적 영향력\n5. 개인 적성 일치도\n\n이 기준들은 다양한 관점을 균형 있게 반영하고 있습니다.",
-        timestamp: "10:12 AM",
-      },
-    ];
-
-    // Round 2: Weight Calculation (AHP)
-    const weightCalculationMessages: Message[] = [
-      {
-        id: 1,
-        agentId: 0,
-        agentName: "Director",
-        agentAvatar: "DR",
-        agentColor: "bg-gradient-to-br from-purple-500 to-purple-700",
-        content: "이제 선정된 5개 기준의 상대적 중요도를 계산하겠습니다. AHP 방법론을 사용하여 각 기준 쌍을 비교할 것입니다. 먼저 '경제적 성장 잠재력' 대 '혁신 잠재력'을 비교해봅시다.",
-        timestamp: "10:20 AM",
-      },
-      {
-        id: 2,
-        agentId: 1,
-        agentName: agents[0]?.name || "Nova",
-        agentAvatar: agents[0]?.avatar || "NV",
-        agentColor: agents[0]?.color || "bg-gradient-to-br from-cyan-500 to-blue-600",
-        content: "저는 혁신 잠재력이 더 중요하다고 봅니다. 경제적 보상은 혁신의 결과로 따라오는 것이지 목표 자체가 아닙니다. 혁신 쪽에 7:3 정도의 비율이 적절해 보입니다.",
-        timestamp: "10:22 AM",
-      },
-      {
-        id: 3,
-        agentId: 2,
-        agentName: agents[1]?.name || "Atlas",
-        agentAvatar: agents[1]?.avatar || "AT",
-        agentColor: agents[1]?.color || "bg-gradient-to-br from-emerald-500 to-teal-600",
-        content: "동의할 수 없습니다. 사용자가 입력 데이터에서 '높은 연봉'과 '빠른 커리어 성장'을 명시적으로 언급했습니다. 경제적 성장이 60%, 혁신이 40% 가중치를 가져야 합니다.",
-        timestamp: "10:24 AM",
-      },
-      {
-        id: 4,
-        agentId: 3,
-        agentName: agents[2]?.name || "Echo",
-        agentAvatar: agents[2]?.avatar || "EC",
-        agentColor: agents[2]?.color || "bg-gradient-to-br from-amber-500 to-orange-600",
-        content: "두 기준 모두 중요하지만, 사용자가 워라밸도 중시한다는 점을 고려하면 극단적인 경제 추구는 부적절합니다. 5:5의 균형 잡힌 비율을 제안합니다.",
-        timestamp: "10:26 AM",
-      },
-      {
-        id: 5,
-        agentId: 0,
-        agentName: "Director",
-        agentAvatar: "DR",
-        agentColor: "bg-gradient-to-br from-purple-500 to-purple-700",
-        content: "세 의견을 종합하여, 경제적 성장 55%, 혁신 45%로 결정하겠습니다. 다음 비교로 넘어갑니다...\n\n[9개 비교 진행 중...]",
-        timestamp: "10:28 AM",
-      },
-      {
-        id: 6,
-        agentId: 0,
-        agentName: "Director",
-        agentAvatar: "DR",
-        agentColor: "bg-gradient-to-br from-purple-500 to-purple-700",
-        content: "✅ AHP 분석 완료!\n\n최종 가중치:\n• 경제적 성장 잠재력: 32.5%\n• 개인 적성 일치도: 24.8%\n• 워라밸 & 지속가능성: 18.3%\n• 혁신 잠재력: 14.2%\n• 사회적 영향력: 10.2%\n\n일관성 비율(CR): 0.0214 ✓ (기준: <0.1)",
-        timestamp: "10:35 AM",
-      },
-    ];
-
-    // Round 3: Major Scoring
-    const scoringMessages: Message[] = [
-      {
-        id: 1,
-        agentId: 0,
-        agentName: "Director",
-        agentAvatar: "DR",
-        agentColor: "bg-gradient-to-br from-purple-500 to-purple-700",
-        content: `이제 각 전공을 5개 기준에 대해 평가하겠습니다. 먼저 '${candidateMajors[0] || "컴퓨터공학"}'의 '경제적 성장 잠재력'을 평가해주세요.`,
-        timestamp: "10:40 AM",
-      },
-      {
-        id: 2,
-        agentId: 2,
-        agentName: agents[1]?.name || "Atlas",
-        agentAvatar: agents[1]?.avatar || "AT",
-        agentColor: agents[1]?.color || "bg-gradient-to-br from-emerald-500 to-teal-600",
-        content: `${candidateMajors[0] || "컴퓨터공학"}의 경제적 전망은 매우 우수합니다. 2024년 기준 초봉 평균 $75K, 5년차 평균 $110K입니다. 취업률 92.3%, IT 산업 연평균 성장률 8.2%를 고려하면 10점 만점에 9점을 부여합니다.`,
-        timestamp: "10:42 AM",
-      },
-      {
-        id: 3,
-        agentId: 1,
-        agentName: agents[0]?.name || "Nova",
-        agentAvatar: agents[0]?.avatar || "NV",
-        agentColor: agents[0]?.color || "bg-gradient-to-br from-cyan-500 to-blue-600",
-        content: "동의합니다. 다만 최근 AI 붐으로 인한 과열 가능성을 고려하면 9점이 적절합니다.",
-        timestamp: "10:44 AM",
-      },
-      {
-        id: 4,
-        agentId: 0,
-        agentName: "Director",
-        agentAvatar: "DR",
-        agentColor: "bg-gradient-to-br from-purple-500 to-purple-700",
-        content: `${candidateMajors[0] || "컴퓨터공학"} - 경제적 성장: 9점 확정.\n\n다음으로 '개인 적성 일치도'를 평가합니다.`,
-        timestamp: "10:45 AM",
-      },
-      {
-        id: 5,
-        agentId: 3,
-        agentName: agents[2]?.name || "Echo",
-        agentAvatar: agents[2]?.avatar || "EC",
-        agentColor: agents[2]?.color || "bg-gradient-to-br from-amber-500 to-orange-600",
-        content: "사용자가 '논리적 사고력'과 '코딩 능력'을 강점으로 언급했고, '수학 경시대회 입상 경력'도 있습니다. 컴퓨터공학과의 일치도는 매우 높아 9.5점을 부여합니다.",
-        timestamp: "10:47 AM",
-      },
-      {
-        id: 6,
-        agentId: 0,
-        agentName: "Director",
-        agentAvatar: "DR",
-        agentColor: "bg-gradient-to-br from-purple-500 to-purple-700",
-        content: `[평가 진행 중...]\n\n현재까지: ${candidateMajors.length || 3}개 전공 × 5개 기준 = ${(candidateMajors.length || 3) * 5}개 평가 완료`,
-        timestamp: "10:55 AM",
-      },
-      {
-        id: 7,
-        agentId: 0,
-        agentName: "Director",
-        agentAvatar: "DR",
-        agentColor: "bg-gradient-to-br from-purple-500 to-purple-700",
-        content: `✅ 의사결정 매트릭스 완성!\n\n전공별 점수 요약:\n• ${candidateMajors[0] || "컴퓨터공학"}: 경제 9.0, 적성 9.5, 워라밸 6.5, 혁신 8.5, 사회 7.0\n• ${candidateMajors[1] || "데이터사이언스"}: 경제 8.5, 적성 8.0, 워라밸 6.0, 혁신 9.0, 사회 8.5\n• ${candidateMajors[2] || "철학"}: 경제 4.0, 적성 7.5, 워라밸 8.5, 혁신 7.0, 사회 9.0\n\n다음 단계에서 TOPSIS를 통해 최종 순위를 도출합니다.`,
-        timestamp: "11:00 AM",
-      },
-    ];
-
-    switch (subStep) {
-      case 1:
-        return criteriaSelectionMessages;
-      case 2:
-        return weightCalculationMessages;
-      case 3:
-        return scoringMessages;
-      default:
-        return [];
-    }
-  }, [agents, candidateMajors]);
-
-  // Load messages when substep changes
+  // Process debate data when round data changes
   useEffect(() => {
-    const conversation = getConversationForSubStep(currentSubStep);
-    setMessages([]);
-    setTypingAgentId(null);
-    setIsConversationComplete(false);
+    let debateData = null;
 
-    let messageIndex = 0;
+    console.log('[AgentConversation] currentSubStep:', currentSubStep);
+    console.log('[AgentConversation] round1Data:', round1Data);
+    console.log('[AgentConversation] agents:', agents);
 
-    // Animate messages
-    const interval = setInterval(() => {
-      if (messageIndex < conversation.length) {
-        const nextMessage = conversation[messageIndex];
-        setTypingAgentId(nextMessage.agentId);
-        setMessages((msgs) => [...msgs, nextMessage]);
+    if (currentSubStep === 1 && round1Data) {
+      debateData = round1Data.round1_debate_turns;
+      console.log('[AgentConversation] Round 1 debate data:', debateData);
+    } else if (currentSubStep === 2 && round2Data) {
+      debateData = round2Data.round2_debate_turns;
+    } else if (currentSubStep === 3 && round3Data) {
+      debateData = round3Data.round3_debate_turns;
+    }
 
-        // Stop typing indicator after a delay
-        setTimeout(() => {
-          setTypingAgentId(null);
-        }, 500);
+    if (debateData && debateData.length > 0) {
+      // Convert DebateTurn[] to Message[]
+      const convertedMessages: Message[] = debateData.map((turn, index) => {
+        const agent = agents.find(a => a.name === turn.speaker);
+        const isDirector = turn.speaker === "Director";
 
-        messageIndex++;
-      } else {
-        clearInterval(interval);
-        setIsConversationComplete(true);
+        // Clean content
+        let cleanContent = turn.content;
+
+        // Director의 final_decision 타입 메시지는 JSON 파싱하여 구조화
+        if (isDirector && turn.type === "final_decision") {
+          try {
+            const parsed = JSON.parse(turn.content);
+            if (parsed.summary) {
+              cleanContent = `📋 **최종 결정**\n\n${parsed.summary}`;
+            }
+          } catch {
+            // JSON 파싱 실패시 원본 유지
+          }
+        }
+
+        cleanContent = cleanContent.replace(/^---\n/, '').replace(/\n---$/, '');
+        cleanContent = cleanContent.trim();
+
+        // 에이전트를 찾지 못한 경우 이름 기반으로 기본 색상/아바타 할당
+        let agentAvatar = "??";
+        let agentColor = "bg-gradient-to-br from-gray-500 to-gray-700";
+
+        if (isDirector) {
+          agentAvatar = "DR";
+          agentColor = "bg-gradient-to-br from-purple-500 to-purple-700";
+        } else if (agent) {
+          agentAvatar = agent.avatar;
+          agentColor = agent.color;
+        } else {
+          // 에이전트를 찾지 못한 경우 이름의 첫 2글자로 아바타 생성
+          agentAvatar = turn.speaker.substring(0, 2).toUpperCase();
+          // 이름 기반으로 색상 할당
+          const colors = [
+            "bg-gradient-to-br from-blue-500 to-blue-700",
+            "bg-gradient-to-br from-green-500 to-green-700",
+            "bg-gradient-to-br from-orange-500 to-orange-700",
+            "bg-gradient-to-br from-cyan-500 to-cyan-700",
+            "bg-gradient-to-br from-pink-500 to-pink-700",
+          ];
+          const colorIndex = turn.speaker.charCodeAt(0) % colors.length;
+          agentColor = colors[colorIndex];
+        }
+
+        return {
+          id: index + 1,
+          agentId: isDirector ? 0 : (agent?.id || -1),
+          agentName: turn.speaker,
+          agentAvatar,
+          agentColor,
+          content: cleanContent,
+          timestamp: new Date(turn.timestamp).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }),
+        };
+      });
+
+      console.log('[AgentConversation] Converted messages:', convertedMessages.length);
+      allMessagesRef.current = convertedMessages;
+
+      // 메시지 초기화 및 애니메이션 시작
+      if (convertedMessages.length > 0) {
+        // 첫 번째 메시지는 즉시 표시
+        setDisplayedMessages([convertedMessages[0]]);
+        setCurrentMessageIndex(1); // 다음 메시지부터 시작
+        setTotalMessages(convertedMessages.length);
       }
-    }, 1500); // New message every 1.5 seconds
+    } else {
+      console.log('[AgentConversation] No debate data found');
+      allMessagesRef.current = [];
+      setDisplayedMessages([]);
+      setCurrentMessageIndex(0);
+      setTotalMessages(0);
+    }
+  }, [currentSubStep, round1Data, round2Data, round3Data, agents]);
 
-    return () => clearInterval(interval);
-  }, [currentSubStep, getConversationForSubStep]);
+  // Animate messages appearing one by one
+  useEffect(() => {
+    if (currentMessageIndex === 0 || currentMessageIndex >= allMessagesRef.current.length) {
+      console.log('[AgentConversation] Animation stopped. Index:', currentMessageIndex, 'Total:', allMessagesRef.current.length);
+      return;
+    }
 
+    console.log('[AgentConversation] Setting timer for message', currentMessageIndex);
+    const timer = setTimeout(() => {
+      console.log('[AgentConversation] Displaying message', currentMessageIndex);
+      setDisplayedMessages(prev => [
+        ...prev,
+        allMessagesRef.current[currentMessageIndex]
+      ]);
+      setCurrentMessageIndex(prev => prev + 1);
+    }, 7000); // 7 seconds between messages
+
+    return () => clearTimeout(timer);
+  }, [currentMessageIndex]);
+
+  // Scroll when new message appears
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [displayedMessages.length]);
 
-  const renderInfoPanel = () => {
-    const majors = candidateMajors.length > 0
-      ? candidateMajors
-      : ["컴퓨터공학", "데이터사이언스", "철학"];
-
-    if (currentSubStep === 1) {
-      // Round 1: Criteria Selection
-      const criteria = [
-        { name: "혁신 잠재력 및 창의성", status: "confirmed" },
-        { name: "경제적 성장 잠재력", status: "confirmed" },
-        { name: "워라밸 & 지속가능성", status: "confirmed" },
-        { name: "사회적 영향력", status: "confirmed" },
-        { name: "개인 적성 일치도", status: "confirmed" },
-      ];
-
-      return (
-        <Card className="h-full overflow-y-auto">
-          <CardContent className="p-6">
-            <h3 className="mb-4 text-lg font-semibold">선정된 평가 기준</h3>
-            <div className="space-y-3">
-              {criteria.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-start gap-3 rounded-lg border border-border bg-muted/50 p-3"
-                >
-                  <CheckCircle2 className="mt-0.5 size-5 flex-shrink-0 text-green-500" />
-                  <div className="flex-1">
-                    <p className="font-medium">{item.name}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      상태: <span className="text-green-500">확정</span>
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 rounded-lg border border-purple-500/30 bg-purple-500/10 p-3">
-              <p className="text-sm text-purple-300">
-                ✓ 5개 기준 모두 다중 에이전트 합의를 통해 확정되었습니다
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      );
-    } else if (currentSubStep === 2) {
-      // Round 2: AHP Weighting
-      const weights = [
-        { name: "경제적 성장", weight: 32.5, color: "bg-primary" },
-        { name: "개인 적성", weight: 24.8, color: "bg-primary/80" },
-        { name: "워라밸", weight: 18.3, color: "bg-purple-500" },
-        { name: "혁신 잠재력", weight: 14.2, color: "bg-blue-500" },
-        { name: "사회적 영향", weight: 10.2, color: "bg-green-500" },
-      ];
-
-      const maxWeight = Math.max(...weights.map((w) => w.weight));
-
-      return (
-        <Card className="h-full overflow-y-auto">
-          <CardContent className="p-6">
-            <h3 className="mb-4 text-lg font-semibold">AHP 가중치 분포</h3>
-            <div className="mb-6 space-y-4">
-              {weights.map((item, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{item.name}</span>
-                    <span className="text-primary">{item.weight}%</span>
-                  </div>
-                  <div className="relative h-8 overflow-hidden rounded-lg bg-muted">
-                    <div
-                      className={`${item.color} flex h-full items-center justify-end pr-3 transition-all duration-1000`}
-                      style={{ width: `${(item.weight / maxWeight) * 100}%` }}
-                    >
-                      <span className="text-xs text-white"></span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-3">
-              <p className="text-sm text-green-300">
-                ✓ 일관성 비율(CR): 0.0214
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                CR &lt; 0.1은 허용 가능한 일관성을 나타냅니다
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      );
-    } else if (currentSubStep === 3) {
-      // Round 3: Decision Matrix
-      const decisionMatrix = [
-        {
-          major: majors[0] || "컴퓨터공학",
-          scores: { economic: 9.0, aptitude: 9.5, balance: 6.5, innovation: 8.5, social: 7.0 },
-        },
-        {
-          major: majors[1] || "데이터사이언스",
-          scores: { economic: 8.5, aptitude: 8.0, balance: 6.0, innovation: 9.0, social: 8.5 },
-        },
-        {
-          major: majors[2] || "철학",
-          scores: { economic: 4.0, aptitude: 7.5, balance: 8.5, innovation: 7.0, social: 9.0 },
-        },
-      ];
-
-      return (
-        <Card className="h-full overflow-y-auto">
-          <CardContent className="p-6">
-            <h3 className="mb-4 text-lg font-semibold">의사결정 매트릭스</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="pb-2 text-left text-muted-foreground">전공</th>
-                    <th className="px-2 pb-2 text-center text-muted-foreground">경제</th>
-                    <th className="px-2 pb-2 text-center text-muted-foreground">적성</th>
-                    <th className="px-2 pb-2 text-center text-muted-foreground">워라밸</th>
-                    <th className="px-2 pb-2 text-center text-muted-foreground">혁신</th>
-                    <th className="px-2 pb-2 text-center text-muted-foreground">사회</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {decisionMatrix.map((row, index) => (
-                    <tr key={index} className="border-b border-border/50">
-                      <td className="py-3">{row.major}</td>
-                      <td className="py-3 text-center">{row.scores.economic}</td>
-                      <td className="py-3 text-center">{row.scores.aptitude}</td>
-                      <td className="py-3 text-center">{row.scores.balance}</td>
-                      <td className="py-3 text-center">{row.scores.innovation}</td>
-                      <td className="py-3 text-center">{row.scores.social}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
-              <p className="text-sm text-blue-300">
-                ✓ {majors.length}개 전공 × 5개 기준 = 총 {majors.length * 5}개 평가
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                TOPSIS 순위 계산 준비 완료
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      );
+  const getRoundTitle = () => {
+    switch (currentSubStep) {
+      case 1:
+        return "Round 1: 평가 기준 선택";
+      case 2:
+        return "Round 2: 기준 가중치 산출 (AHP)";
+      case 3:
+        return "Round 3: 대안(학과)간 평가";
+      default:
+        return "에이전트 대화";
     }
-
-    return null;
   };
 
   return (
-    <div className="flex h-full gap-6 overflow-hidden">
-      {/* Left Side - Agent Cards */}
-      <div className="flex w-80 flex-col gap-4 overflow-y-auto">
+    <div className="flex flex-1 gap-6 overflow-hidden">
+      {/* Left Sidebar - Agent Cards */}
+      <div className="w-80 shrink-0 space-y-3 overflow-y-auto">
         {/* Director Card */}
-        <div
-          className={`rounded-lg border p-4 transition-all duration-300 ${typingAgentId === 0
-            ? "border-purple-500 shadow-lg shadow-purple-500/20"
-            : "border-border"
-            } bg-card`}
-        >
-          <div className="mb-3 flex items-center gap-3">
-            <div className="flex size-12 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-700 text-white">
-              <span>DR</span>
+        <Card className="bg-[#101622] border-[#3b4354] py-2">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-700 text-white font-semibold">
+                DR
+              </div>
+              <div>
+                <h3 className="font-semibold text-white">Director</h3>
+                <p className="text-xs text-[#9ca6ba]">Moderator</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h3 className="font-semibold">Director</h3>
-              <p className="text-xs text-muted-foreground">Moderator</p>
-            </div>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            토론을 진행하고 에이전트들의 의견을 종합하여 합의를 이끌어냅니다.
-          </p>
-        </div>
+            <p className="mt-2 text-sm text-[#9ca6ba] leading-relaxed">
+              토론을 진행하고 에이전트들의 의견을 종합하여 합의를 이끌어냅니다.
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Agent Cards */}
         {agents.map((agent) => (
-          <div
-            key={agent.id}
-            className={`rounded-lg border p-4 transition-all duration-300 ${typingAgentId === agent.id
-              ? "border-primary shadow-lg shadow-primary/20"
-              : "border-border"
-              } bg-card`}
-          >
-            <div className="mb-3 flex items-center gap-3">
-              <div
-                className={`flex size-12 items-center justify-center rounded-full ${agent.color} text-white`}
-              >
-                <span>{agent.avatar}</span>
+          <Card key={agent.id} className="bg-[#101622] border-[#3b4354] py-2">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-3">
+                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${agent.color} text-white font-semibold`}>
+                  {agent.avatar}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-white truncate">{agent.name}</h3>
+                  <p className="text-xs text-[#9ca6ba] truncate">{agent.perspective}</p>
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold">{agent.name}</h3>
-                <p className="text-xs text-muted-foreground">{agent.role}</p>
+              <p className="mt-2 text-sm text-[#9ca6ba] leading-relaxed line-clamp-3">
+                {agent.personality}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {agent.strengths.slice(0, 3).map((strength, idx) => (
+                  <span
+                    key={idx}
+                    className="rounded-full bg-[#282e39] px-2 py-1 text-xs text-[#9ca6ba]"
+                  >
+                    {strength}
+                  </span>
+                ))}
               </div>
-            </div>
-            <p className="text-sm text-muted-foreground">{agent.personality}</p>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {agent.strengths.map((strength, idx) => (
-                <Badge key={idx} variant="outline" className="text-xs">
-                  {strength}
-                </Badge>
-              ))}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      {/* Center - Conversation */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex-1 space-y-4 overflow-y-auto pr-2">
-          {messages.map((msg) => {
-            const isDirector = msg.agentId === 0;
+      {/* Main Conversation Area */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="mb-4">
+          <h2 className="text-2xl font-bold text-white">{getRoundTitle()}</h2>
+          <p className="text-sm text-[#9ca6ba] mt-1">
+            {currentSubStep === 1 && "에이전트들이 전공 평가 기준을 논의하고 있습니다"}
+            {currentSubStep === 2 && "각 기준의 중요도를 AHP 방법으로 산정하고 있습니다"}
+            {currentSubStep === 3 && "선정된 기준으로 전공들을 평가하고 있습니다"}
+          </p>
+        </div>
 
-            return (
+        {/* Messages */}
+        <div className="flex-1 space-y-4 overflow-y-auto rounded-lg border border-[#282e39] bg-black/20 p-6">
+          {(isLoadingRound || (displayedMessages.length === 0 && totalMessages === 0)) && (
+            <div className="flex h-full items-center justify-center">
+              <div className="text-center">
+                <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-[#FF1F55] border-t-transparent"></div>
+                <p className="text-[#9ca6ba]">에이전트들이 토론 중입니다...</p>
+              </div>
+            </div>
+          )}
+
+          {displayedMessages.map((msg) => (
+            <div key={msg.id} className="flex gap-3 animate-fadeIn">
+              {/* Agent Avatar */}
               <div
-                key={msg.id}
-                className="flex gap-3"
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${msg.agentColor} text-sm font-semibold text-white`}
               >
-                {/* Avatar */}
+                {msg.agentAvatar}
+              </div>
+
+              {/* Message Content */}
+              <div className="flex-1">
+                <div className="flex items-baseline gap-2">
+                  <span className="font-semibold text-white">{msg.agentName}</span>
+                  <span className="text-xs text-[#9ca6ba]">{msg.timestamp}</span>
+                </div>
                 <div
-                  className={`flex size-10 flex-shrink-0 items-center justify-center rounded-full ${msg.agentColor} text-white`}
+                  className={`mt-2 rounded-lg p-3 ${msg.agentName === "Director"
+                    ? "border border-purple-500/30 bg-purple-500/10"
+                    : "border border-[#3b4354] bg-[#1b1f27]"
+                    }`}
                 >
-                  <span className="text-sm">{msg.agentAvatar}</span>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#e5e7eb]">
+                    {msg.content}
+                  </p>
                 </div>
+              </div>
+            </div>
+          ))}
 
-                {/* Message Content */}
-                <div className="max-w-2xl flex-1">
-                  <div className="mb-1 flex items-center gap-2">
-                    <span className="font-medium">{msg.agentName}</span>
-                    <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
-                  </div>
-                  <div
-                    className={`rounded-lg p-4 ${isDirector
-                      ? "border border-purple-500/30 bg-gradient-to-r from-purple-500/20 to-purple-700/20"
-                      : "border border-border bg-card"
-                      }`}
-                  >
-                    <p className="whitespace-pre-line">{msg.content}</p>
-                  </div>
-                </div>
+          {currentMessageIndex < totalMessages && (
+            <div className="flex gap-3 opacity-50">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+                <div className="h-2 w-2 animate-pulse rounded-full bg-[#FF1F55]"></div>
               </div>
-            );
-          })}
-
-          {/* Typing Indicator */}
-          {typingAgentId !== null && (
-            <div className="flex gap-3">
-              <div
-                className={`flex size-10 flex-shrink-0 items-center justify-center rounded-full ${typingAgentId === 0
-                  ? "bg-gradient-to-br from-purple-500 to-purple-700"
-                  : agents.find((a) => a.id === typingAgentId)?.color || "bg-gray-500"
-                  } text-white`}
-              >
-                <span className="text-sm">
-                  {typingAgentId === 0
-                    ? "DR"
-                    : agents.find((a) => a.id === typingAgentId)?.avatar || "?"}
-                </span>
-              </div>
-              <div className="max-w-2xl flex-1">
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="font-medium">
-                    {typingAgentId === 0
-                      ? "Director"
-                      : agents.find((a) => a.id === typingAgentId)?.name || "Agent"}
-                  </span>
-                </div>
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <div className="flex gap-1">
-                    <span className="size-2 animate-bounce rounded-full bg-muted-foreground" />
-                    <span
-                      className="size-2 animate-bounce rounded-full bg-muted-foreground"
-                      style={{ animationDelay: "0.2s" }}
-                    />
-                    <span
-                      className="size-2 animate-bounce rounded-full bg-muted-foreground"
-                      style={{ animationDelay: "0.4s" }}
-                    />
-                  </div>
-                </div>
-              </div>
+              <p className="text-sm text-[#9ca6ba]">입력 중...</p>
             </div>
           )}
 
@@ -570,12 +297,109 @@ export function AgentConversation({
         </div>
       </div>
 
-      {/* Right Side - Info Panel (only shown when conversation is complete) */}
-      {isConversationComplete && (
-        <div className="w-80 flex-shrink-0 animate-in fade-in slide-in-from-right duration-500">
-          {renderInfoPanel()}
-        </div>
-      )}
+      {/* Right Panel - Round Results */}
+      <div className="w-80 shrink-0">
+        <Card className="h-full overflow-y-auto bg-[#101622] border-[#3b4354] py-0">
+          <CardContent className="p-4">
+            <h3 className="mb-3 text-lg font-semibold text-white">
+              {currentSubStep === 1 && "선정된 평가 기준"}
+              {currentSubStep === 2 && "AHP 가중치"}
+              {currentSubStep === 3 && "의사결정 매트릭스"}
+            </h3>
+
+            {/* Round 1: Selected Criteria */}
+            {currentSubStep === 1 && round1Data && round1Data.round1_director_decision && round1Data.round1_director_decision.selected_criteria && (
+              <div className="space-y-2">
+                {round1Data.round1_director_decision.selected_criteria.map((criterion: SelectedCriterion, index: number) => (
+                  <div
+                    key={index}
+                    className="rounded-lg border border-[#3b4354] bg-[#1b1f27] p-2.5"
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="text-green-400 shrink-0">✓</span>
+                      <div className="flex-1">
+                        <p className="font-semibold text-white text-base leading-snug">{criterion.name}</p>
+                        <p className="mt-1 text-xs text-[#9ca6ba] leading-relaxed">{criterion.description}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {round1Data.round1_director_decision.selected_criteria.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-purple-500/30 bg-purple-500/10 p-2.5">
+                    <p className="text-xs text-purple-300">
+                      ✓ {round1Data.round1_director_decision.selected_criteria.length}개 기준 모두 에이전트 합의를 통해 선정되었습니다
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Round 1: Loading or No Data */}
+            {currentSubStep === 1 && !round1Data && (
+              <div className="text-center py-8">
+                <p className="text-sm text-[#9ca6ba]">토론 진행 중...</p>
+              </div>
+            )}
+
+            {/* Round 2: AHP Weights */}
+            {currentSubStep === 2 && round2Data && (
+              <div className="space-y-4">
+                {Object.entries(round2Data.criteria_weights).map(([criterion, weight], index) => (
+                  <div key={index}>
+                    <div className="mb-1 flex items-center justify-between text-sm">
+                      <span className="text-white">{criterion}</span>
+                      <span className="text-[#FF1F55] font-semibold">
+                        {(weight * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-[#101622]">
+                      <div
+                        className="h-full bg-linear-to-r from-[#FF1F55] to-[#FF4572] transition-all duration-500"
+                        style={{ width: `${weight * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+                <div className="mt-4 rounded-lg border border-green-500/30 bg-green-500/10 p-3">
+                  <p className="text-sm text-green-400">
+                    ✓ CR: {round2Data.consistency_ratio.toFixed(4)} (기준: &lt;0.1)
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Round 3: Decision Matrix */}
+            {currentSubStep === 3 && round3Data && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-[#3b4354]">
+                      <th className="pb-2 pr-2 text-left text-white">전공</th>
+                      {Object.keys(Object.values(round3Data.decision_matrix)[0] || {}).map((criterion) => (
+                        <th key={criterion} className="pb-2 px-1 text-right text-white">
+                          {criterion.substring(0, 4)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(round3Data.decision_matrix).map(([major, scores]) => (
+                      <tr key={major} className="border-b border-[#3b4354]/50">
+                        <td className="py-2 pr-2 text-white truncate max-w-20">{major}</td>
+                        {Object.values(scores).map((score, idx) => (
+                          <td key={idx} className="py-2 px-1 text-right text-[#9ca6ba]">
+                            {typeof score === 'number' ? score.toFixed(1) : score}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

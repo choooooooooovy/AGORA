@@ -1,6 +1,6 @@
 "use client";
 
-import { UIAgent } from "@/lib/types";
+import { UIAgent, DecisionMatrix } from "@/lib/types";
 import { Award, Sparkles, Target } from "lucide-react";
 
 interface MajorRecommendation {
@@ -13,9 +13,17 @@ interface ReviewExportProps {
   recommendations: MajorRecommendation[];
   candidateMajors: string[];
   agents: UIAgent[];
+  criteriaWeights?: Record<string, number>;
+  decisionMatrix?: DecisionMatrix;
 }
 
-export function ReviewExport({ recommendations, candidateMajors, agents }: ReviewExportProps) {
+export function ReviewExport({
+  recommendations,
+  candidateMajors,
+  agents,
+  criteriaWeights: propCriteriaWeights,
+  decisionMatrix: propDecisionMatrix
+}: ReviewExportProps) {
   // Mock data for detailed analysis
   const allMajors = candidateMajors.length > 0
     ? candidateMajors
@@ -87,12 +95,12 @@ export function ReviewExport({ recommendations, candidateMajors, agents }: Revie
                   {/* Rank Badge */}
                   <div
                     className={`flex items-center justify-center size-16 rounded-full shrink-0 ${rank === 1
-                        ? "bg-gradient-to-br from-yellow-400 to-yellow-600"
-                        : rank === 2
-                          ? "bg-gradient-to-br from-gray-300 to-gray-500"
-                          : rank === 3
-                            ? "bg-gradient-to-br from-orange-400 to-orange-600"
-                            : "bg-gradient-to-br from-gray-500 to-gray-700"
+                      ? "bg-gradient-to-br from-yellow-400 to-yellow-600"
+                      : rank === 2
+                        ? "bg-gradient-to-br from-gray-300 to-gray-500"
+                        : rank === 3
+                          ? "bg-gradient-to-br from-orange-400 to-orange-600"
+                          : "bg-gradient-to-br from-gray-500 to-gray-700"
                       }`}
                   >
                     <span className="text-white text-xl font-bold">#{rank}</span>
