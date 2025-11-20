@@ -8,7 +8,7 @@ export function Header() {
           <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
             <span className="text-xl font-bold text-primary-foreground">A</span>
           </div>
-          <span className="text-lg font-semibold">Agent Conversation</span>
+          <span className="text-lg font-bold">AGORA</span>
         </Link>
       </div>
     </header>

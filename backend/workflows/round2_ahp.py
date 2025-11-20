@@ -72,7 +72,7 @@ def generate_comparison_pairs(criteria: List[str]) -> List[Tuple[str, str]]:
 
 
 def run_round2_debate(state: Dict[str, Any]) -> Dict[str, Any]:
-    """Round 2 토론 시스템 메인 함수 (13턴 구조)"""
+    """Round 2 토론 시스템 메인 함수 (CR 체크 및 재토론 포함)"""
     # 페르소나 확인
     personas = state.get('agent_personas', [])
     if not personas or len(personas) != 3:
@@ -96,92 +96,122 @@ def run_round2_debate(state: Dict[str, Any]) -> Dict[str, Any]:
     for pair in comparison_pairs:
         print(f"  - {pair[0]} vs {pair[1]}")
     
-    # 초기화
-    debate_turns = []
+    # CR threshold 설정
+    cr_threshold = state.get('user_input', {}).get('settings', {}).get('cr_threshold', 0.1)
+    max_retries = state.get('user_input', {}).get('settings', {}).get('cr_max_retries', 3)
     
-    # Phase 1-3: 각 Agent 주도권
-    for phase_idx, lead_agent in enumerate(personas, 1):
-        other_agents = [p for p in personas if p['name'] != lead_agent['name']]
+    print(f"\n[CR 설정] Threshold: {cr_threshold}, Max Retries: {max_retries}")
+    
+    # CR이 threshold 이하가 될 때까지 재토론
+    for attempt in range(max_retries):
+        print(f"\n{'='*60}")
+        print(f"[Round 2 Attempt {attempt + 1}/{max_retries}]")
+        print(f"{'='*60}")
         
-        # Director 도입 발언 (Phase 시작)
-        intro_turn = _director_phase_intro(state, lead_agent, phase_idx, debate_turns)
-        debate_turns.append(intro_turn)
+        # 초기화
+        debate_turns = []
         
-        # Turn 1: Lead agent 전체 비교표 제안
-        proposal_turn = _agent_propose_comparisons(
-            state, lead_agent, criteria_names, comparison_pairs,
-            len(debate_turns) + 1, phase_idx
-        )
-        debate_turns.append(proposal_turn)
-        
-        # Turn 2-3: Other agents 반박
-        for critic in other_agents:
-            critique_turn = _agent_critique(
-                state, critic, lead_agent, proposal_turn,
+        # Phase 1-3: 각 Agent 주도권
+        for phase_idx, lead_agent in enumerate(personas, 1):
+            other_agents = [p for p in personas if p['name'] != lead_agent['name']]
+            
+            # Director 도입 발언 (Phase 시작)
+            intro_turn = _director_phase_intro(state, lead_agent, phase_idx, debate_turns)
+            debate_turns.append(intro_turn)
+            
+            # Turn 1: Lead agent 전체 비교표 제안
+            proposal_turn = _agent_propose_comparisons(
+                state, lead_agent, criteria_names, comparison_pairs,
+                len(debate_turns) + 1, phase_idx
+            )
+            debate_turns.append(proposal_turn)
+            
+            # Turn 2-3: Other agents 반박
+            for critic in other_agents:
+                critique_turn = _agent_critique(
+                    state, critic, lead_agent, proposal_turn,
+                    len(debate_turns) + 1, phase_idx, debate_turns
+                )
+                debate_turns.append(critique_turn)
+            
+            # Turn 4: Lead agent 재반박
+            defense_turn = _agent_defend(
+                state, lead_agent, other_agents,
                 len(debate_turns) + 1, phase_idx, debate_turns
             )
-            debate_turns.append(critique_turn)
+            debate_turns.append(defense_turn)
+            
+            # Director 정리 발언 (Phase 종료, 마지막 Phase 제외)
+            if phase_idx < 3:
+                summary_turn = _director_phase_summary(state, lead_agent, personas[phase_idx], phase_idx, debate_turns)
+                debate_turns.append(summary_turn)
         
-        # Turn 4: Lead agent 재반박
-        defense_turn = _agent_defend(
-            state, lead_agent, other_agents,
-            len(debate_turns) + 1, phase_idx, debate_turns
+        # Director 의견 취합 멘트 (최종 결정 전)
+        transition_turn = _director_pre_decision_transition(state, personas, debate_turns)
+        debate_turns.append(transition_turn)
+        
+        # Phase 4: Director 최종 결정
+        director_turn = _director_final_decision(
+            state, personas, criteria_names, comparison_pairs, debate_turns
         )
-        debate_turns.append(defense_turn)
+        debate_turns.append(director_turn)
         
-        # Director 정리 발언 (Phase 종료, 마지막 Phase 제외)
-        if phase_idx < 3:
-            summary_turn = _director_phase_summary(state, lead_agent, personas[phase_idx], phase_idx, debate_turns)
-            debate_turns.append(summary_turn)
-    
-    # Director 의견 취합 멘트 (최종 결정 전)
-    transition_turn = _director_pre_decision_transition(state, personas, debate_turns)
-    debate_turns.append(transition_turn)
-    
-    # Phase 4: Director 최종 결정
-    director_turn = _director_final_decision(
-        state, personas, criteria_names, comparison_pairs, debate_turns
-    )
-    debate_turns.append(director_turn)
-    
-    # State 업데이트
-    state['round2_debate_turns'] = debate_turns
-    state['comparison_matrix'] = director_turn.get('comparison_matrix', {})
-    state['round2_director_decision'] = director_turn
-    
-    # AHP 가중치 계산
-    comparison_matrix = state['comparison_matrix']
-    calculator = AHPCalculator()
-    
-    # 비교 행렬을 AHP 계산기 형식으로 변환
-    comparisons = {}
-    for pair_key, value in comparison_matrix.items():
-        criteria_a, criteria_b = pair_key.split(' vs ')
-        comparisons[(criteria_a, criteria_b)] = value
-    
-    # 쌍대비교 행렬 생성
-    pairwise_matrix = calculator.create_pairwise_matrix(criteria_names, comparisons)
-    
-    # 가중치 계산
-    weights_array = calculator.calculate_weights(pairwise_matrix)
-    
-    # CR 계산
-    lambda_max, cr = calculator.calculate_consistency_ratio(pairwise_matrix, weights_array)
-    
-    # 가중치를 딕셔너리로 변환
-    weights = {criteria_names[i]: float(weights_array[i]) for i in range(len(criteria_names))}
-    
-    # State에 결과 저장
-    state['criteria_weights'] = weights
-    state['consistency_ratio'] = float(cr)
-    state['eigenvalue_max'] = float(lambda_max)
-    
-    print(f"\n[AHP 가중치 계산 완료]")
-    print(f"  Consistency Ratio: {cr:.4f}")
-    print(f"  Lambda Max: {lambda_max:.4f}")
-    print(f"\n[기준별 가중치]")
-    for criterion, weight in weights.items():
-        print(f"  - {criterion}: {weight:.4f}")
+        # AHP 가중치 계산
+        comparison_matrix = director_turn.get('comparison_matrix', {})
+        calculator = AHPCalculator()
+        
+        # 비교 행렬을 AHP 계산기 형식으로 변환
+        comparisons = {}
+        for pair_key, value in comparison_matrix.items():
+            criteria_a, criteria_b = pair_key.split(' vs ')
+            comparisons[(criteria_a, criteria_b)] = value
+        
+        # 쌍대비교 행렬 생성
+        pairwise_matrix = calculator.create_pairwise_matrix(criteria_names, comparisons)
+        
+        # 가중치 계산
+        weights_array = calculator.calculate_weights(pairwise_matrix)
+        
+        # CR 계산
+        lambda_max, cr = calculator.calculate_consistency_ratio(pairwise_matrix, weights_array)
+        
+        # 가중치를 딕셔너리로 변환
+        weights = {criteria_names[i]: float(weights_array[i]) for i in range(len(criteria_names))}
+        
+        print(f"\n[AHP 가중치 계산 완료 - Attempt {attempt + 1}]")
+        print(f"  Consistency Ratio: {cr:.4f} (Threshold: {cr_threshold})")
+        for criterion, weight in weights.items():
+            print(f"  - {criterion}: {weight:.2%}")
+        
+        # CR이 threshold 이하면 성공
+        if cr <= cr_threshold:
+            print(f"\n✅ CR이 threshold 이하입니다. 토론 종료.")
+            # State 업데이트
+            state['round2_debate_turns'] = debate_turns
+            state['comparison_matrix'] = comparison_matrix
+            state['round2_director_decision'] = director_turn
+            state['criteria_weights'] = weights
+            state['consistency_ratio'] = float(cr)
+            state['eigenvalue_max'] = float(lambda_max)
+            state['cr_retry_count'] = attempt + 1
+            break
+        else:
+            print(f"\n⚠️  CR ({cr:.4f})이 threshold ({cr_threshold})를 초과했습니다.")
+            if attempt < max_retries - 1:
+                print(f"재토론을 시작합니다... (남은 시도: {max_retries - attempt - 1}회)")
+                # 재토론을 위해 Director에게 피드백 제공
+                state['previous_cr'] = float(cr)
+                state['previous_comparison_matrix'] = comparison_matrix
+            else:
+                print(f"\n❌ 최대 재시도 횟수({max_retries}회)에 도달했습니다. 마지막 결과를 사용합니다.")
+                # State 업데이트 (마지막 시도 결과 사용)
+                state['round2_debate_turns'] = debate_turns
+                state['comparison_matrix'] = comparison_matrix
+                state['round2_director_decision'] = director_turn
+                state['criteria_weights'] = weights
+                state['consistency_ratio'] = float(cr)
+                state['eigenvalue_max'] = float(lambda_max)
+                state['cr_retry_count'] = max_retries
     
     return state
 

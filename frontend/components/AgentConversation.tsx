@@ -58,14 +58,57 @@ export function AgentConversation({
         // Clean content
         let cleanContent = turn.content;
 
+        // Round 2: Agent의 comparison_matrix JSON 파싱
+        if (!isDirector && turn.content.includes('"comparison_matrix"')) {
+          try {
+            const jsonMatch = turn.content.match(/```json\s*([\s\S]*?)\s*```/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[1]);
+              const matrix = parsed.comparison_matrix;
+
+              // 설명 텍스트 추출 (JSON 블록 전 부분)
+              const explanationText = turn.content.substring(0, turn.content.indexOf('```json')).trim();
+
+              // 테이블 형태로 변환
+              let tableContent = '\n\n**📊 쌍대비교 결과:**\n\n';
+              Object.entries(matrix).forEach(([pair, score]) => {
+                tableContent += `• ${pair}: **${score}점**\n`;
+              });
+
+              cleanContent = explanationText + tableContent;
+            }
+          } catch (e) {
+            console.error('Failed to parse comparison_matrix:', e);
+          }
+        }
+
         // Director의 final_decision 타입 메시지는 JSON 파싱하여 구조화
         if (isDirector && turn.type === "final_decision") {
           try {
             const parsed = JSON.parse(turn.content);
-            if (parsed.summary) {
+
+            // Round 1: selected_criteria와 summary
+            if (parsed.summary && parsed.selected_criteria) {
               cleanContent = `📋 **최종 결정**\n\n${parsed.summary}`;
             }
-          } catch {
+            // Round 2: comparison_matrix와 reasoning
+            else if (parsed.comparison_matrix && parsed.reasoning) {
+              let formattedContent = '✅ **AHP 분석 완료**\n\n';
+
+              // Comparison matrix를 테이블로
+              formattedContent += '**📊 최종 쌍대비교 점수:**\n\n';
+              Object.entries(parsed.comparison_matrix).forEach(([pair, score]) => {
+                formattedContent += `• ${pair}: **${score}점**\n`;
+              });
+
+              // Reasoning을 그대로 표시
+              formattedContent += '\n**💡 결정 근거:**\n\n';
+              formattedContent += parsed.reasoning;
+
+              cleanContent = formattedContent;
+            }
+          } catch (e) {
+            console.error('Failed to parse final_decision:', e);
             // JSON 파싱 실패시 원본 유지
           }
         }
@@ -176,7 +219,7 @@ export function AgentConversation({
       {/* Left Sidebar - Agent Cards */}
       <div className="w-80 shrink-0 space-y-3 overflow-y-auto">
         {/* Director Card */}
-        <Card className="bg-[#101622] border-[#3b4354] py-2">
+        <Card className="bg-[#0a0d12] border-[#3b4354] py-2">
           <CardContent className="p-3">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-700 text-white font-semibold">
@@ -195,7 +238,7 @@ export function AgentConversation({
 
         {/* Agent Cards */}
         {agents.map((agent) => (
-          <Card key={agent.id} className="bg-[#101622] border-[#3b4354] py-2">
+          <Card key={agent.id} className="bg-[#0a0d12] border-[#3b4354] py-2">
             <CardContent className="p-3">
               <div className="flex items-center gap-3">
                 <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${agent.color} text-white font-semibold`}>
@@ -290,7 +333,7 @@ export function AgentConversation({
 
       {/* Right Panel - Round Results */}
       <div className="w-80 shrink-0">
-        <Card className="h-full overflow-y-auto bg-[#101622] border-[#3b4354] py-0">
+        <Card className="h-full overflow-y-auto bg-[#0a0d12] border-[#3b4354] py-0">
           <CardContent className="p-4">
             <h3 className="mb-3 text-lg font-semibold text-white">
               {currentSubStep === 1 && "선정된 평가 기준"}
@@ -333,32 +376,48 @@ export function AgentConversation({
               </div>
             )}
 
-            {/* Round 2: AHP Weights */}
-            {currentSubStep === 2 && round2Data && (
-              <div className="space-y-4">
-                {Object.entries(round2Data.criteria_weights).map(([criterion, weight], index) => (
-                  <div key={index}>
-                    <div className="mb-1 flex items-center justify-between text-sm">
-                      <span className="text-white">{criterion}</span>
-                      <span className="text-[#FF1F55] font-semibold">
-                        {(weight * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-[#101622]">
-                      <div
-                        className="h-full bg-linear-to-r from-[#FF1F55] to-[#FF4572] transition-all duration-500"
-                        style={{ width: `${weight * 100}%` }}
-                      />
-                    </div>
+            {/* Round 2: AHP Weights - Only show after Director's final decision is displayed */}
+            {currentSubStep === 2 && round2Data &&
+              displayedMessages.some(msg => msg.type === 'final_decision') && (
+                <div className="space-y-4">
+                  {Object.entries(round2Data.criteria_weights)
+                    .sort(([, a], [, b]) => b - a) // Sort by weight descending
+                    .map(([criterion, weight], index) => {
+                      const colors = ['#EF4444', '#EC4899', '#A855F7', '#3B82F6', '#10B981'];
+                      const color = colors[index % colors.length];
+
+                      return (
+                        <div key={index}>
+                          <div className="mb-1 flex items-center justify-between text-sm">
+                            <span className="text-white">{criterion}</span>
+                            <span className="font-semibold" style={{ color }}>
+                              {(weight * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="h-2 overflow-hidden rounded-full bg-[#1b1f27]">
+                            <div
+                              className="h-full transition-all duration-500 rounded-full"
+                              style={{
+                                width: `${weight * 100}%`,
+                                backgroundColor: color
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  <div className="mt-4 rounded-lg border border-green-500/30 bg-green-500/10 p-3">
+                    <p className="text-sm text-green-400">
+                      ✓ 일관성 비율(CR): {round2Data.consistency_ratio.toFixed(4)}
+                    </p>
+                    <p className="text-xs text-green-300 mt-1">
+                      {round2Data.consistency_ratio <= 0.1
+                        ? 'CR < 0.1로 일관성 기준을 충족합니다'
+                        : 'CR이 0.1을 초과했지만 최선의 결과를 사용합니다'}
+                    </p>
                   </div>
-                ))}
-                <div className="mt-4 rounded-lg border border-green-500/30 bg-green-500/10 p-3">
-                  <p className="text-sm text-green-400">
-                    ✓ CR: {round2Data.consistency_ratio.toFixed(4)} (기준: &lt;0.1)
-                  </p>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Round 3: Decision Matrix */}
             {currentSubStep === 3 && round3Data && (
