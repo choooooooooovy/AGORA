@@ -48,10 +48,10 @@ export function StepNavigator({
                 <div className="flex items-center gap-2">
                   <div
                     className={`flex items-center justify-center size-8 rounded-full border-2 transition-colors ${step.id === currentStep
-                        ? "border-[#FF1F55] bg-[#FF1F55] text-white"
-                        : step.id < currentStep
-                          ? "border-[#FF1F55] bg-transparent text-[#FF1F55]"
-                          : "border-[#3b4354] bg-transparent text-[#9ca6ba]"
+                      ? "border-[#FF1F55] bg-[#FF1F55] text-white"
+                      : step.id < currentStep
+                        ? "border-[#FF1F55] bg-transparent text-[#FF1F55]"
+                        : "border-[#3b4354] bg-transparent text-[#9ca6ba]"
                       }`}
                   >
                     {step.id < currentStep ? (
@@ -62,10 +62,10 @@ export function StepNavigator({
                   </div>
                   <span
                     className={`text-sm transition-colors hidden sm:inline ${step.id === currentStep
-                        ? "text-white"
-                        : step.id < currentStep
-                          ? "text-[#FF1F55]"
-                          : "text-[#9ca6ba]"
+                      ? "text-white"
+                      : step.id < currentStep
+                        ? "text-[#FF1F55]"
+                        : "text-[#9ca6ba]"
                       }`}
                   >
                     {step.label}
@@ -116,24 +116,24 @@ export function StepNavigator({
                   <button
                     onClick={() => onSubStepChange?.(subStep.id)}
                     className={`flex items-center gap-2 group transition-all ${subStep.id === currentSubStep
-                        ? "cursor-default"
-                        : "cursor-pointer hover:scale-105"
+                      ? "cursor-default"
+                      : "cursor-pointer hover:scale-105"
                       }`}
                   >
                     <div
                       className={`size-2 rounded-full transition-all ${subStep.id === currentSubStep
-                          ? "bg-[#FF1F55] scale-125"
-                          : subStep.id < currentSubStep
-                            ? "bg-[#FF1F55]/70"
-                            : "bg-[#3b4354] group-hover:bg-[#9ca6ba]/50"
+                        ? "bg-[#FF1F55] scale-125"
+                        : subStep.id < currentSubStep
+                          ? "bg-[#FF1F55]/70"
+                          : "bg-[#3b4354] group-hover:bg-[#9ca6ba]/50"
                         }`}
                     />
                     <span
                       className={`text-xs transition-colors ${subStep.id === currentSubStep
-                          ? "text-white"
-                          : subStep.id < currentSubStep
-                            ? "text-[#FF1F55]/70"
-                            : "text-[#9ca6ba] group-hover:text-white"
+                        ? "text-white"
+                        : subStep.id < currentSubStep
+                          ? "text-[#FF1F55]/70"
+                          : "text-[#9ca6ba] group-hover:text-white"
                         }`}
                     >
                       {subStep.label}

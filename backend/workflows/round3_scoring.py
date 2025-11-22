@@ -128,7 +128,7 @@ def run_round3_debate(state: Dict[str, Any]) -> Dict[str, Any]:
     
     # Phase 4: Director 최종 결정
     director_turn = _director_final_decision(
-        state, personas, criteria_names, debate_turns
+        state, personas, criteria_names, alternatives, debate_turns
     )
     debate_turns.append(director_turn)
     

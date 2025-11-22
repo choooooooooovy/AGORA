@@ -32,6 +32,17 @@ export function AgentConversation({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Markdown bold(**텍스트**)를 HTML로 변환
+  const renderMarkdown = (text: string) => {
+    const parts = text.split(/\*\*(.+?)\*\*/g);
+    return parts.map((part, index) => {
+      if (index % 2 === 1) {
+        return <strong key={index} className="font-bold text-white">{part}</strong>;
+      }
+      return part;
+    });
+  };
+
   // Process debate data when round data changes
   useEffect(() => {
     let debateData = null;
@@ -57,6 +68,36 @@ export function AgentConversation({
 
         // Clean content
         let cleanContent = turn.content;
+
+        // Round 3: Agent의 proposal에서 decision_matrix JSON 파싱
+        if (currentSubStep === 3 && !isDirector && turn.type === 'proposal') {
+          try {
+            const jsonMatch = turn.content.match(/```json\s*([\s\S]*?)\s*```/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[1]);
+              const matrix = parsed.decision_matrix;
+
+              // 설명 텍스트 추출 (JSON 블록 전 부분)
+              const explanationText = turn.content.substring(0, turn.content.indexOf('```json')).trim();
+
+              // Decision Matrix를 테이블 형태로 변환
+              let tableContent = '\n\n**📊 평가 매트릭스:**\n\n';
+
+              // 모든 전공 표시
+              Object.keys(matrix).forEach(major => {
+                tableContent += `**${major}**\n`;
+                Object.entries(matrix[major]).forEach(([criterion, score]) => {
+                  tableContent += `  • ${criterion}: **${score}점**\n`;
+                });
+                tableContent += '\n';
+              });
+
+              cleanContent = explanationText + tableContent;
+            }
+          } catch (e) {
+            console.error('Failed to parse Round 3 proposal:', e);
+          }
+        }
 
         // Round 2: Agent의 comparison_matrix JSON 파싱
         if (!isDirector && turn.content.includes('"comparison_matrix"')) {
@@ -106,6 +147,10 @@ export function AgentConversation({
               formattedContent += parsed.reasoning;
 
               cleanContent = formattedContent;
+            }
+            // Round 3: decision_matrix와 reasoning
+            else if (parsed.decision_matrix && parsed.reasoning) {
+              cleanContent = `✅ **의사결정 매트릭스 완성**\n\n**💡 결정 근거:**\n\n${parsed.reasoning}`;
             }
           } catch (e) {
             console.error('Failed to parse final_decision:', e);
@@ -311,7 +356,7 @@ export function AgentConversation({
                     }`}
                 >
                   <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#e5e7eb]">
-                    {msg.content}
+                    {renderMarkdown(msg.content)}
                   </p>
                 </div>
               </div>
@@ -420,34 +465,56 @@ export function AgentConversation({
               )}
 
             {/* Round 3: Decision Matrix */}
-            {currentSubStep === 3 && round3Data && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-[#3b4354]">
-                      <th className="pb-2 pr-2 text-left text-white">전공</th>
-                      {Object.keys(Object.values(round3Data.decision_matrix)[0] || {}).map((criterion) => (
-                        <th key={criterion} className="pb-2 px-1 text-right text-white">
-                          {criterion.substring(0, 4)}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(round3Data.decision_matrix).map(([major, scores]) => (
-                      <tr key={major} className="border-b border-[#3b4354]/50">
-                        <td className="py-2 pr-2 text-white truncate max-w-20">{major}</td>
-                        {Object.values(scores).map((score, idx) => (
-                          <td key={idx} className="py-2 px-1 text-right text-[#9ca6ba]">
-                            {typeof score === 'number' ? score.toFixed(1) : score}
-                          </td>
+            {currentSubStep === 3 && round3Data &&
+              displayedMessages.some(msg => msg.type === 'final_decision') && (
+                <div className="space-y-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-[#3b4354]">
+                          <th className="pb-2 pr-2 text-left text-white text-[10px]">전공</th>
+                          {Object.keys(Object.values(round3Data.decision_matrix)[0] || {}).map((criterion) => (
+                            <th
+                              key={criterion}
+                              className="pb-2 px-1 text-right text-white text-[10px] whitespace-normal leading-tight"
+                            >
+                              {criterion}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(round3Data.decision_matrix).map(([major, scores]) => (
+                          <tr key={major} className="border-b border-[#3b4354]/50">
+                            <td className="py-2 pr-2 text-white text-[10px] whitespace-normal leading-tight">
+                              {major}
+                            </td>
+                            {Object.values(scores).map((score, idx) => (
+                              <td key={idx} className="py-2 px-1 text-right text-[#9ca6ba] text-[10px]">
+                                {typeof score === 'number' ? score.toFixed(1) : score}
+                              </td>
+                            ))}
+                          </tr>
                         ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* 통계 정보 */}
+                  <div className="mt-3 pt-3 border-t border-[#3b4354] space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[#9ca6ba]">
+                        {Object.keys(round3Data.decision_matrix).length}개 전공 × {Object.keys(Object.values(round3Data.decision_matrix)[0] || {}).length}개 기준 = 총 {Object.keys(round3Data.decision_matrix).length * Object.keys(Object.values(round3Data.decision_matrix)[0] || {}).length}개 평가
+                      </span>
+                    </div>
+                    <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-2.5">
+                      <p className="text-xs text-blue-400 font-medium">
+                        ✅ TOPSIS 순위 계산 준비 완료
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
           </CardContent>
         </Card>
       </div>

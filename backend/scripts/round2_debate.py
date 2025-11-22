@@ -1,24 +1,33 @@
 """Round 2 Debate System"""
 
 import json
+import sys
 from pathlib import Path
 from workflows.round2_ahp import run_round2_debate
 
 USER_INPUT_PATH = 'data/user_inputs/current_user.json'
 
-def run_round2():
+def run_round2(session_id=None):
     """Round 2 토론 실행"""
     
-    # Round 1 결과 로드 (가장 최근 파일 - 생성 시간 기준)
     output_dir = Path("output")
-    round1_files = sorted(output_dir.glob("round1_*.json"), key=lambda x: x.stat().st_mtime)
     
-    if not round1_files:
-        print("[ERROR] Round 1 결과 파일이 없습니다. 먼저 Round 1을 실행하세요.")
-        return
+    # session_id가 제공된 경우 해당 파일 로드, 아니면 가장 최근 파일
+    if session_id:
+        round1_file = output_dir / f"round1_{session_id}.json"
+        if not round1_file.exists():
+            print(f"[ERROR] Round 1 결과 파일이 없습니다: {round1_file}")
+            return
+        print(f"[LOAD] Round 1 결과 로드: {round1_file.name}")
+    else:
+        round1_files = sorted(output_dir.glob("round1_*.json"), key=lambda x: x.stat().st_mtime)
+        if not round1_files:
+            print("[ERROR] Round 1 결과 파일이 없습니다. 먼저 Round 1을 실행하세요.")
+            return
+        round1_file = round1_files[-1]
+        print(f"[LOAD] Round 1 결과 로드 (최근): {round1_file.name}")
     
-    latest_round1 = round1_files[-1]
-    print(f"[LOAD] Round 1 결과 로드: {latest_round1.name}")
+    latest_round1 = round1_file
     
     with open(latest_round1, 'r', encoding='utf-8') as f:
         round1_state = json.load(f)
@@ -127,4 +136,6 @@ def run_round2():
 
 
 if __name__ == "__main__":
-    run_round2()
+    # Command line argument로 session_id 받기 (optional)
+    session_id = sys.argv[1] if len(sys.argv) > 1 else None
+    run_round2(session_id)

@@ -345,7 +345,7 @@ export default function App() {
               />
             </svg>
           </div>
-          <h2 className="text-xl">Agent Conversation</h2>
+          <h2 className="text-xl font-semibold">AGORA</h2>
         </div>
       </header>
 
