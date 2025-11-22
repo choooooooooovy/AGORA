@@ -24,36 +24,45 @@ export function ReviewExport({
   criteriaWeights: propCriteriaWeights,
   decisionMatrix: propDecisionMatrix
 }: ReviewExportProps) {
-  // Mock data for detailed analysis
-  const allMajors = candidateMajors.length > 0
-    ? candidateMajors
-    : ["컴퓨터공학", "데이터사이언스", "철학"];
+  // Sort majors by TOPSIS rank
+  const sortedMajors = recommendations.length > 0
+    ? recommendations.sort((a, b) => a.rank - b.rank).map(r => r.major)
+    : candidateMajors.length > 0
+      ? candidateMajors
+      : ["컴퓨터공학", "데이터사이언스", "철학"];
 
-  const topMajors = allMajors.slice(0, 3); const criteriaScores: Record<string, { economic: number; aptitude: number; balance: number; innovation: number; social: number }> = {
-    [topMajors[0] || "컴퓨터공학"]: { economic: 9.0, aptitude: 9.5, balance: 6.5, innovation: 8.5, social: 7.0 },
-    [topMajors[1] || "데이터사이언스"]: { economic: 8.5, aptitude: 8.0, balance: 6.0, innovation: 9.0, social: 8.5 },
-    [topMajors[2] || "철학"]: { economic: 4.0, aptitude: 7.5, balance: 8.5, innovation: 7.0, social: 9.0 },
+  // Criteria icons mapping
+  const criteriaIcons: Record<string, string> = {
+    "경제적 성장": "💰",
+    "개인 적성": "🎯",
+    "워라밸": "⚖️",
+    "혁신 잠재력": "💡",
+    "사회적 영향": "🌍",
+    "논리적 사고": "🧠",
+    "미적 감각": "🎨",
+    "협동 능력": "🤝",
+    "윤리 의식": "⚖️",
   };
 
-  const criteriaWeights = [
-    { name: "경제적 성장", weight: 32.5, icon: "💰" },
-    { name: "개인 적성", weight: 24.8, icon: "🎯" },
-    { name: "워라밸", weight: 18.3, icon: "⚖️" },
-    { name: "혁신 잠재력", weight: 14.2, icon: "💡" },
-    { name: "사회적 영향", weight: 10.2, icon: "🌍" },
-  ];
+  // Transform propCriteriaWeights to array format with icons
+  const criteriaWeights = propCriteriaWeights
+    ? Object.entries(propCriteriaWeights).map(([name, weight]) => ({
+      name,
+      weight: weight * 100, // Convert to percentage
+      icon: criteriaIcons[name] || "📊",
+    }))
+    : [];
 
   const getMajorInsights = (major: string) => {
-    const scores = criteriaScores[major];
-    if (!scores) return { strengths: [], weaknesses: [] };
+    if (!propDecisionMatrix || !propDecisionMatrix[major]) {
+      return { strengths: [], weaknesses: [] };
+    }
 
-    const allScores = [
-      { name: "경제적 성장", score: scores.economic },
-      { name: "개인 적성", score: scores.aptitude },
-      { name: "워라밸", score: scores.balance },
-      { name: "혁신 잠재력", score: scores.innovation },
-      { name: "사회적 영향", score: scores.social },
-    ];
+    const scores = propDecisionMatrix[major];
+    const allScores = Object.entries(scores).map(([name, score]) => ({
+      name,
+      score,
+    }));
 
     const sorted = [...allScores].sort((a, b) => b.score - a.score);
     return {
@@ -71,17 +80,19 @@ export function ReviewExport({
           <div>
             <h1 className="text-white text-3xl">최종 전공 추천</h1>
             <p className="text-[#9ca6ba] mt-2">
-              TOPSIS 분석을 통해 도출된 {allMajors.length}개 전공의 최종 순위
+              TOPSIS 분석을 통해 도출된 {sortedMajors.length}개 전공의 최종 순위
             </p>
           </div>
         </div>
 
         {/* Major Cards */}
         <div className="grid grid-cols-1 gap-4">
-          {allMajors.map((major, index) => {
+          {sortedMajors.map((major) => {
             const insights = getMajorInsights(major);
-            const rank = index + 1;
-            const topsisScore = Math.max(0.5, 0.9 - (rank - 1) * 0.05);
+            // Get real TOPSIS rank and score from recommendations
+            const recommendation = recommendations.find(r => r.major === major);
+            const rank = recommendation?.rank ?? 0;
+            const topsisScore = recommendation?.closeness_coefficient ?? 0;
 
             return (
               <div
@@ -187,7 +198,7 @@ export function ReviewExport({
                     <span>{item.icon}</span>
                     {item.name}
                   </span>
-                  <span className="text-[#FF1F55] font-semibold">{item.weight}%</span>
+                  <span className="text-[#FF1F55] font-semibold">{item.weight.toFixed(3)}%</span>
                 </div>
                 <div className="h-1.5 bg-[#1b1f27] rounded-full overflow-hidden">
                   <div
@@ -207,26 +218,24 @@ export function ReviewExport({
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-[#282e39]">
-                  <th className="text-left text-[#9ca6ba] pb-2 pr-2">전공</th>
-                  <th className="text-center text-[#9ca6ba] px-1 pb-2">경제</th>
-                  <th className="text-center text-[#9ca6ba] px-1 pb-2">적성</th>
-                  <th className="text-center text-[#9ca6ba] px-1 pb-2">워라밸</th>
-                  <th className="text-center text-[#9ca6ba] px-1 pb-2">혁신</th>
-                  <th className="text-center text-[#9ca6ba] px-1 pb-2">사회</th>
+                  <th className="text-left text-[#9ca6ba] pb-2 pr-2 whitespace-normal">전공</th>
+                  {propDecisionMatrix && Object.keys(Object.values(propDecisionMatrix)[0] || {}).map((criterion) => (
+                    <th key={criterion} className="text-center text-[#9ca6ba] px-1 pb-2 whitespace-normal leading-tight">
+                      {criterion}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {topMajors.map((major, index) => {
-                  const scores = criteriaScores[major];
+                {propDecisionMatrix && sortedMajors.map((major, index) => {
+                  const scores = propDecisionMatrix[major];
                   if (!scores) return null;
                   return (
                     <tr key={index} className="border-b border-[#282e39]/50">
-                      <td className="text-white py-2 pr-2 truncate max-w-[80px]">{major}</td>
-                      <td className="text-center text-[#d1d5db] py-2">{scores.economic}</td>
-                      <td className="text-center text-[#d1d5db] py-2">{scores.aptitude}</td>
-                      <td className="text-center text-[#d1d5db] py-2">{scores.balance}</td>
-                      <td className="text-center text-[#d1d5db] py-2">{scores.innovation}</td>
-                      <td className="text-center text-[#d1d5db] py-2">{scores.social}</td>
+                      <td className="text-white py-2 pr-2 whitespace-normal leading-tight">{major}</td>
+                      {Object.values(scores).map((score, i) => (
+                        <td key={i} className="text-center text-[#d1d5db] py-2">{score}</td>
+                      ))}
                     </tr>
                   );
                 })}

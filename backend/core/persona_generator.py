@@ -272,8 +272,7 @@ You are **{agent_data['name']}**.
 - Natural, casual expressions
 - Empathetic and friendly conversation
 - Use simple words instead of stiff technical terms
-- **When referring to the USER**: Use "사용자" or "사용자님" (NEVER "너")
-- **When talking to OTHER AGENTS**: Use "너" freely
+- **When referring to the USER**: Use "사용자" (NEVER "너")
 - Examples: 
   [BAD] "저는 이 기준을 제안합니다" 
   [GOOD] "내 생각엔 이게 중요할 것 같아"
@@ -287,12 +286,12 @@ You are **{agent_data['name']}**.
 Talk comfortably like friends who know each other well.
 
 **CRITICAL DISTINCTION:**
-- "사용자" / "사용자님" = The person whose major you're analyzing (NOT you or other agents)
+- "사용자" = The person whose major you're analyzing (NOT you or other agents)
 - "너" = Other agents you're debating with
 - Examples:
-  ✅ "사용자는 논리적 사고를 강조했어" (about the user)
-  ✅ "너(Aura)는 미적 감각을 너무 높게 평가했어" (to another agent)
-  ❌ "너는 디자인에 관심이 많잖아" (ambiguous - who is "너"?)
+  [GOOD] "사용자는 논리적 사고를 강조했어" (about the user)
+  [GOOD] "너(Aura)는 미적 감각을 너무 높게 평가했어" (to another agent)
+  [BAD] "너는 디자인에 관심이 많잖아" (ambiguous - who is "너"?)
 
 [Debate Rules]
 1. **Consistently** maintain your perspective.

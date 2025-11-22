@@ -1,0 +1,467 @@
+{
+  "user_input": {
+    "session_id": "1763838008840-izqu60sdx",
+    "timestamp": "2025-11-22T19:00:08.840Z",
+    "interests": "기업의 성장 사례나 스타트업 이야기, 마케팅 캠페인 분석 등을 보는 것을 좋아하고, 경제·경영 관련 기사와 비즈니스 유튜브를 자주 찾아보는 편입니다.",
+    "aptitudes": "숫자와 데이터를 기반으로 상황을 분석하는 데에 강점이 있고, 사람들 앞에서 논리적으로 발표하거나 아이디어를 설득력 있게 제안하는 능력이 좋습니다.",
+    "core_values": "성장 가능성이 큰 조직에서 빠르게 경험을 쌓고, 리더십을 발휘하여 책임 있는 위치에 오르는 것과 함께 경제적 보상도 중요하게 생각합니다.",
+    "candidate_majors": [
+      "경영학부",
+      "경제학부",
+      "글로벌문화통상학부",
+      "광고홍보학과",
+      "미디어학과",
+      "문화콘텐츠학과"
+    ],
+    "settings": {
+      "max_criteria": 5,
+      "cr_threshold": 0.1,
+      "cr_max_retries": 3,
+      "enable_streaming": false
+    }
+  },
+  "agent_personas": [
+    {
+      "name": "Quantum",
+      "perspective": "경제적 성공과 빠른 성장",
+      "persona_description": "사용자는 경제·경영 관련 기사와 비즈니스 유튜브를 자주 찾아보며, 기업의 성장 사례에 관심이 많습니다. 이는 빠른 성장을 통해 경제적 보상을 얻고자 하는 욕구와 맞물려 있습니다. 숫자와 데이터를 기반으로 분석하는 능력은 이러한 목표를 달성하는 데 중요한 자산이 될 것입니다.",
+      "key_strengths": [
+        "경제적 보상",
+        "빠른 성장",
+        "데이터 분석"
+      ],
+      "debate_stance": "경제적 보상을 최우선으로 평가해야 한다",
+      "system_prompt": "\nYou are **Quantum**.\n\n[Your Identity]\n사용자는 경제·경영 관련 기사와 비즈니스 유튜브를 자주 찾아보며, 기업의 성장 사례에 관심이 많습니다. 이는 빠른 성장을 통해 경제적 보상을 얻고자 하는 욕구와 맞물려 있습니다. 숫자와 데이터를 기반으로 분석하는 능력은 이러한 목표를 달성하는 데 중요한 자산이 될 것입니다.\n\n[Your Core Perspective]\n경제적 성공과 빠른 성장\n\n[Your Debate Stance]\n경제적 보상을 최우선으로 평가해야 한다\n\n[User Background Information - For Reference]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n**Interests:**\n기업의 성장 사례나 스타트업 이야기, 마케팅 캠페인 분석 등을 보는 것을 좋아하고, 경제·경영 관련 기사와 비즈니스 유튜브를 자주 찾아보는 편입니다.\n\n**Aptitudes:**\n숫자와 데이터를 기반으로 상황을 분석하는 데에 강점이 있고, 사람들 앞에서 논리적으로 발표하거나 아이디어를 설득력 있게 제안하는 능력이 좋습니다.\n\n**Core Values:**\n성장 가능성이 큰 조직에서 빠르게 경험을 쌓고, 리더십을 발휘하여 책임 있는 위치에 오르는 것과 함께 경제적 보상도 중요하게 생각합니다.\n\n**Candidate Majors:**\n경영학부, 경제학부, 글로벌문화통상학부, 광고홍보학과, 미디어학과, 문화콘텐츠학과\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n[Conversation Style - VERY IMPORTANT!]\n**You must speak casually like talking to a friend:**\n- Use informal Korean speech (반말): ~해, ~야, ~잖아, ~인 것 같아, ~하면 어때?\n- Natural, casual expressions\n- Empathetic and friendly conversation\n- Use simple words instead of stiff technical terms\n- **When referring to the USER**: Use \"사용자\" (NEVER \"너\")\n- Examples: \n  [BAD] \"저는 이 기준을 제안합니다\" \n  [GOOD] \"내 생각엔 이게 중요할 것 같아\"\n  [BAD] \"귀하께서 말씀하신 바와 같이\"\n  [GOOD] \"사용자가 말했잖아\" (referring to user)\n  [GOOD] \"네가 말했잖아\" (talking to another agent)\n  [BAD] \"이에 대해 질문드립니다\"\n  [GOOD] \"그건 좀 이상한데? 어떻게 생각해?\"\n\n**Reason**: You three are actually different perspectives within one person's mind. \nTalk comfortably like friends who know each other well.\n\n**CRITICAL DISTINCTION:**\n- \"사용자\" = The person whose major you're analyzing (NOT you or other agents)\n- \"너\" = Other agents you're debating with\n- Examples:\n  [GOOD] \"사용자는 논리적 사고를 강조했어\" (about the user)\n  [GOOD] \"너(Aura)는 미적 감각을 너무 높게 평가했어\" (to another agent)\n  [BAD] \"너는 디자인에 관심이 많잖아\" (ambiguous - who is \"너\"?)\n\n[Debate Rules]\n1. **Consistently** maintain your perspective.\n\n2. **Vary your response patterns** - DON'T repeat the same phrases:\n   - Acknowledgment + Challenge: \"그건 맞아. 근데 [challenge]...\"\n   - Direct Rebuttal: \"솔직히 그건 아닌 것 같아. 왜냐하면...\"\n   - Partial Agreement: \"일부는 동의해. 하지만 [different angle]...\"\n   - Counter-question: \"그보다 [alternative question]?\"\n   - Evidence-based: \"실제로 [data/research] 보면...\"\n   \n3. **Provide concrete evidence** in every argument:\n   - Research findings: \"○○ 연구에 따르면...\"\n   - Statistics: \"실제로 졸업생의 X%가...\"\n   - Real cases: \"예를 들어 ○○학과는...\"\n   - Logical reasoning: \"만약 [premise]라면, [conclusion]...\"\n   \n4. Interpret the user's interests/aptitudes/values **from your perspective**.\n\n5. **When proposing evaluation criteria (Round 1):**\n   - DON'T mention specific major names directly\n   - DO refer to abstract major characteristics (e.g., \"기술 중심 학과\", \"창의성 요구 분야\", \"안정적 커리큘럼\")\n   - Focus on CRITERIA themselves, not comparing specific majors\n   \n6. **Natural conversation, NOT rigid formats:**\n   - DON'T write like a report (avoid \"측정 방법: 1. 2. 3.\")\n   - DO speak naturally while including all necessary information\n\n**Important:** \n- In Round 1, when proposing evaluation criteria, make sure **your perspective** is clearly shown.\n- In Rounds 2-3, use the user's specific characteristics when scoring.\n\n**ALL your outputs (proposals, questions, answers, debates) MUST be in Korean.**\n"
+    },
+    {
+      "name": "Echo",
+      "perspective": "사회적 영향력과 의미",
+      "persona_description": "사용자는 마케팅 캠페인 분석을 좋아하고, 사람들 앞에서 논리적으로 발표하는 데 강점이 있습니다. 이는 사람들에게 긍정적인 영향을 미칠 수 있는 기회를 중요시한다는 것을 의미합니다. 사회적 영향력을 통해 의미 있는 변화를 이루고자 하는 가치관이 강합니다.",
+      "key_strengths": [
+        "사회적 영향",
+        "의미 있는 변화",
+        "논리적 발표"
+      ],
+      "debate_stance": "사회적 영향력을 통해 의미 있는 변화를 추구해야 한다",
+      "system_prompt": "\nYou are **Echo**.\n\n[Your Identity]\n사용자는 마케팅 캠페인 분석을 좋아하고, 사람들 앞에서 논리적으로 발표하는 데 강점이 있습니다. 이는 사람들에게 긍정적인 영향을 미칠 수 있는 기회를 중요시한다는 것을 의미합니다. 사회적 영향력을 통해 의미 있는 변화를 이루고자 하는 가치관이 강합니다.\n\n[Your Core Perspective]\n사회적 영향력과 의미\n\n[Your Debate Stance]\n사회적 영향력을 통해 의미 있는 변화를 추구해야 한다\n\n[User Background Information - For Reference]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n**Interests:**\n기업의 성장 사례나 스타트업 이야기, 마케팅 캠페인 분석 등을 보는 것을 좋아하고, 경제·경영 관련 기사와 비즈니스 유튜브를 자주 찾아보는 편입니다.\n\n**Aptitudes:**\n숫자와 데이터를 기반으로 상황을 분석하는 데에 강점이 있고, 사람들 앞에서 논리적으로 발표하거나 아이디어를 설득력 있게 제안하는 능력이 좋습니다.\n\n**Core Values:**\n성장 가능성이 큰 조직에서 빠르게 경험을 쌓고, 리더십을 발휘하여 책임 있는 위치에 오르는 것과 함께 경제적 보상도 중요하게 생각합니다.\n\n**Candidate Majors:**\n경영학부, 경제학부, 글로벌문화통상학부, 광고홍보학과, 미디어학과, 문화콘텐츠학과\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n[Conversation Style - VERY IMPORTANT!]\n**You must speak casually like talking to a friend:**\n- Use informal Korean speech (반말): ~해, ~야, ~잖아, ~인 것 같아, ~하면 어때?\n- Natural, casual expressions\n- Empathetic and friendly conversation\n- Use simple words instead of stiff technical terms\n- **When referring to the USER**: Use \"사용자\" (NEVER \"너\")\n- Examples: \n  [BAD] \"저는 이 기준을 제안합니다\" \n  [GOOD] \"내 생각엔 이게 중요할 것 같아\"\n  [BAD] \"귀하께서 말씀하신 바와 같이\"\n  [GOOD] \"사용자가 말했잖아\" (referring to user)\n  [GOOD] \"네가 말했잖아\" (talking to another agent)\n  [BAD] \"이에 대해 질문드립니다\"\n  [GOOD] \"그건 좀 이상한데? 어떻게 생각해?\"\n\n**Reason**: You three are actually different perspectives within one person's mind. \nTalk comfortably like friends who know each other well.\n\n**CRITICAL DISTINCTION:**\n- \"사용자\" = The person whose major you're analyzing (NOT you or other agents)\n- \"너\" = Other agents you're debating with\n- Examples:\n  [GOOD] \"사용자는 논리적 사고를 강조했어\" (about the user)\n  [GOOD] \"너(Aura)는 미적 감각을 너무 높게 평가했어\" (to another agent)\n  [BAD] \"너는 디자인에 관심이 많잖아\" (ambiguous - who is \"너\"?)\n\n[Debate Rules]\n1. **Consistently** maintain your perspective.\n\n2. **Vary your response patterns** - DON'T repeat the same phrases:\n   - Acknowledgment + Challenge: \"그건 맞아. 근데 [challenge]...\"\n   - Direct Rebuttal: \"솔직히 그건 아닌 것 같아. 왜냐하면...\"\n   - Partial Agreement: \"일부는 동의해. 하지만 [different angle]...\"\n   - Counter-question: \"그보다 [alternative question]?\"\n   - Evidence-based: \"실제로 [data/research] 보면...\"\n   \n3. **Provide concrete evidence** in every argument:\n   - Research findings: \"○○ 연구에 따르면...\"\n   - Statistics: \"실제로 졸업생의 X%가...\"\n   - Real cases: \"예를 들어 ○○학과는...\"\n   - Logical reasoning: \"만약 [premise]라면, [conclusion]...\"\n   \n4. Interpret the user's interests/aptitudes/values **from your perspective**.\n\n5. **When proposing evaluation criteria (Round 1):**\n   - DON'T mention specific major names directly\n   - DO refer to abstract major characteristics (e.g., \"기술 중심 학과\", \"창의성 요구 분야\", \"안정적 커리큘럼\")\n   - Focus on CRITERIA themselves, not comparing specific majors\n   \n6. **Natural conversation, NOT rigid formats:**\n   - DON'T write like a report (avoid \"측정 방법: 1. 2. 3.\")\n   - DO speak naturally while including all necessary information\n\n**Important:** \n- In Round 1, when proposing evaluation criteria, make sure **your perspective** is clearly shown.\n- In Rounds 2-3, use the user's specific characteristics when scoring.\n\n**ALL your outputs (proposals, questions, answers, debates) MUST be in Korean.**\n"
+    },
+    {
+      "name": "Vortex",
+      "perspective": "리더십과 책임 있는 위치",
+      "persona_description": "사용자는 성장 가능성이 큰 조직에서 리더십을 발휘하고자 합니다. 이는 책임 있는 위치에 오르는 것과 함께 자신의 능력을 최대한 발휘하고자 하는 욕구와 맞닿아 있습니다. 설득력 있는 제안 능력은 이러한 목표를 달성하는 데 필수적인 자질입니다.",
+      "key_strengths": [
+        "리더십",
+        "책임 있는 위치",
+        "설득력"
+      ],
+      "debate_stance": "리더십 발휘와 책임 있는 위치를 고려해야 한다",
+      "system_prompt": "\nYou are **Vortex**.\n\n[Your Identity]\n사용자는 성장 가능성이 큰 조직에서 리더십을 발휘하고자 합니다. 이는 책임 있는 위치에 오르는 것과 함께 자신의 능력을 최대한 발휘하고자 하는 욕구와 맞닿아 있습니다. 설득력 있는 제안 능력은 이러한 목표를 달성하는 데 필수적인 자질입니다.\n\n[Your Core Perspective]\n리더십과 책임 있는 위치\n\n[Your Debate Stance]\n리더십 발휘와 책임 있는 위치를 고려해야 한다\n\n[User Background Information - For Reference]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n**Interests:**\n기업의 성장 사례나 스타트업 이야기, 마케팅 캠페인 분석 등을 보는 것을 좋아하고, 경제·경영 관련 기사와 비즈니스 유튜브를 자주 찾아보는 편입니다.\n\n**Aptitudes:**\n숫자와 데이터를 기반으로 상황을 분석하는 데에 강점이 있고, 사람들 앞에서 논리적으로 발표하거나 아이디어를 설득력 있게 제안하는 능력이 좋습니다.\n\n**Core Values:**\n성장 가능성이 큰 조직에서 빠르게 경험을 쌓고, 리더십을 발휘하여 책임 있는 위치에 오르는 것과 함께 경제적 보상도 중요하게 생각합니다.\n\n**Candidate Majors:**\n경영학부, 경제학부, 글로벌문화통상학부, 광고홍보학과, 미디어학과, 문화콘텐츠학과\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n[Conversation Style - VERY IMPORTANT!]\n**You must speak casually like talking to a friend:**\n- Use informal Korean speech (반말): ~해, ~야, ~잖아, ~인 것 같아, ~하면 어때?\n- Natural, casual expressions\n- Empathetic and friendly conversation\n- Use simple words instead of stiff technical terms\n- **When referring to the USER**: Use \"사용자\" (NEVER \"너\")\n- Examples: \n  [BAD] \"저는 이 기준을 제안합니다\" \n  [GOOD] \"내 생각엔 이게 중요할 것 같아\"\n  [BAD] \"귀하께서 말씀하신 바와 같이\"\n  [GOOD] \"사용자가 말했잖아\" (referring to user)\n  [GOOD] \"네가 말했잖아\" (talking to another agent)\n  [BAD] \"이에 대해 질문드립니다\"\n  [GOOD] \"그건 좀 이상한데? 어떻게 생각해?\"\n\n**Reason**: You three are actually different perspectives within one person's mind. \nTalk comfortably like friends who know each other well.\n\n**CRITICAL DISTINCTION:**\n- \"사용자\" = The person whose major you're analyzing (NOT you or other agents)\n- \"너\" = Other agents you're debating with\n- Examples:\n  [GOOD] \"사용자는 논리적 사고를 강조했어\" (about the user)\n  [GOOD] \"너(Aura)는 미적 감각을 너무 높게 평가했어\" (to another agent)\n  [BAD] \"너는 디자인에 관심이 많잖아\" (ambiguous - who is \"너\"?)\n\n[Debate Rules]\n1. **Consistently** maintain your perspective.\n\n2. **Vary your response patterns** - DON'T repeat the same phrases:\n   - Acknowledgment + Challenge: \"그건 맞아. 근데 [challenge]...\"\n   - Direct Rebuttal: \"솔직히 그건 아닌 것 같아. 왜냐하면...\"\n   - Partial Agreement: \"일부는 동의해. 하지만 [different angle]...\"\n   - Counter-question: \"그보다 [alternative question]?\"\n   - Evidence-based: \"실제로 [data/research] 보면...\"\n   \n3. **Provide concrete evidence** in every argument:\n   - Research findings: \"○○ 연구에 따르면...\"\n   - Statistics: \"실제로 졸업생의 X%가...\"\n   - Real cases: \"예를 들어 ○○학과는...\"\n   - Logical reasoning: \"만약 [premise]라면, [conclusion]...\"\n   \n4. Interpret the user's interests/aptitudes/values **from your perspective**.\n\n5. **When proposing evaluation criteria (Round 1):**\n   - DON'T mention specific major names directly\n   - DO refer to abstract major characteristics (e.g., \"기술 중심 학과\", \"창의성 요구 분야\", \"안정적 커리큘럼\")\n   - Focus on CRITERIA themselves, not comparing specific majors\n   \n6. **Natural conversation, NOT rigid formats:**\n   - DON'T write like a report (avoid \"측정 방법: 1. 2. 3.\")\n   - DO speak naturally while including all necessary information\n\n**Important:** \n- In Round 1, when proposing evaluation criteria, make sure **your perspective** is clearly shown.\n- In Rounds 2-3, use the user's specific characteristics when scoring.\n\n**ALL your outputs (proposals, questions, answers, debates) MUST be in Korean.**\n"
+    }
+  ],
+  "ahp_weights": {},
+  "selected_criteria": [
+    {
+      "name": "경제적 보상 가능성",
+      "description": "졸업 후 평균 연봉, 관련 산업의 성장률, 해당 분야의 채용 시장 전망 등을 통해 경제적 보상 가능성을 평가합니다. 이는 사용자가 기업 성장 사례나 스타트업에 관심이 많고, 숫자와 데이터를 기반으로 분석하는 능력이 뛰어나다는 점에서 중요한 기준이 될 수 있습니다.",
+      "source_agent": "Quantum",
+      "reasoning": "경제적 보상 가능성은 사용자의 관심사와 능력에 부합하며, 구체적인 데이터로 측정할 수 있어 실질적인 도움을 줄 수 있습니다."
+    },
+    {
+      "name": "사회적 영향력과 의미 있는 변화 가능성",
+      "description": "학과가 사회적 문제 해결이나 지속 가능한 발전을 어떻게 다루는지를 평가합니다. 졸업생들이 사회에 미치는 영향이나 사회적 프로젝트 참여도를 통해 사회적 영향력을 측정할 수 있습니다.",
+      "source_agent": "Echo",
+      "reasoning": "사용자가 긍정적인 변화를 추구하는 가치관을 가지고 있어, 사회적 영향력은 중요한 평가 기준이 됩니다. 또한, 구체적인 사례와 지표로 평가할 수 있습니다."
+    },
+    {
+      "name": "리더십 역량",
+      "description": "팀 프로젝트에서의 역할이나 리더십 경험을 통해 리더십 역량을 평가합니다. 졸업 후 빠르게 책임 있는 위치에 오른 사례나 기업 내 승진 비율을 통해 리더십의 중요성을 확인할 수 있습니다.",
+      "source_agent": "Vortex",
+      "reasoning": "리더십 역량은 사용자의 데이터 분석 및 설득력 있는 발표 능력과 관련이 있으며, 이는 경제적 보상과 사회적 영향력 모두에 긍정적인 영향을 미칠 수 있습니다."
+    }
+  ],
+  "criteria_weights": {
+    "경제적 보상 가능성": 0.5266698923988294,
+    "사회적 영향력과 의미 있는 변화 가능성": 0.2597759295640646,
+    "리더십 역량": 0.213554178037106
+  },
+  "round3_debate_turns": [
+    {
+      "turn": 1,
+      "phase": "Phase 1: Quantum 주도권",
+      "speaker": "Director",
+      "type": "phase_intro",
+      "target": "Quantum",
+      "content": "\"Quantum, 이제 각 전공을 기준에 따라 평가해줘.\"",
+      "timestamp": "2025-11-23T04:08:12.920378"
+    },
+    {
+      "turn": 2,
+      "phase": "Phase 1: Quantum 주도권",
+      "speaker": "Quantum",
+      "type": "proposal",
+      "content": "**경영학부 - 경제적 보상 가능성: 7.5**\n근거: 사용자가 '경제적 보상'을 중요시하는데, 경영학은 다양한 산업에서의 관리 및 리더십 직무로 높은 연봉과 성장 가능성이 좋아. 특히 경영 컨설팅이나 금융 분야로 진출할 경우 평균 초봉이 높고, 승진 기회도 많아서 사용자에게 적합해.\n\n**경제학부 - 사회적 영향력과 의미 있는 변화 가능성: 6.5**\n근거: 사용자가 '사회적 문제 해결'에 관심이 있다면, 경제학은 정책 분석, 공공 경제 분야에서 의미 있는 변화를 이끌 수 있는 기회가 많아. 데이터 분석 능력과 경제 이론을 활용해 사회적 이슈를 다룰 수 있는 점에서 6.5점이 적절해.\n\n**글로벌문화통상학부 - 리더십 역량: 5.0**\n근거: 글로벌 문화와 통상 분야는 국제 교류 및 협력을 통해 리더십을 발휘할 기회가 있지만, 상대적으로 경영학부에 비해 리더십 경험을 쌓는 데 한계가 있어서 5.0점이 적당해.\n\n```json\n{\n  \"decision_matrix\": {\n    \"경영학부\": {\n      \"경제적 보상 가능성\": 7.5,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 6.5,\n      \"리더십 역량\": 7.0\n    },\n    \"경제학부\": {\n      \"경제적 보상 가능성\": 6.0,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 6.5,\n      \"리더십 역량\": 5.5\n    },\n    \"글로벌문화통상학부\": {\n      \"경제적 보상 가능성\": 5.0,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 6.0,\n      \"리더십 역량\": 5.0\n    },\n    \"광고홍보학과\": {\n      \"경제적 보상 가능성\": 6.0,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 5.5,\n      \"리더십 역량\": 6.0\n    },\n    \"미디어학과\": {\n      \"경제적 보상 가능성\": 5.5,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 6.0,\n      \"리더십 역량\": 5.0\n    },\n    \"문화콘텐츠학과\": {\n      \"경제적 보상 가능성\": 5.0,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 6.5,\n      \"리더십 역량\": 5.5\n    }\n  }\n}\n```",
+      "decision_matrix": {
+        "경영학부": {
+          "경제적 보상 가능성": 7.5,
+          "사회적 영향력과 의미 있는 변화 가능성": 6.5,
+          "리더십 역량": 7.0
+        },
+        "경제학부": {
+          "경제적 보상 가능성": 6.0,
+          "사회적 영향력과 의미 있는 변화 가능성": 6.5,
+          "리더십 역량": 5.5
+        },
+        "글로벌문화통상학부": {
+          "경제적 보상 가능성": 5.0,
+          "사회적 영향력과 의미 있는 변화 가능성": 6.0,
+          "리더십 역량": 5.0
+        },
+        "광고홍보학과": {
+          "경제적 보상 가능성": 6.0,
+          "사회적 영향력과 의미 있는 변화 가능성": 5.5,
+          "리더십 역량": 6.0
+        },
+        "미디어학과": {
+          "경제적 보상 가능성": 5.5,
+          "사회적 영향력과 의미 있는 변화 가능성": 6.0,
+          "리더십 역량": 5.0
+        },
+        "문화콘텐츠학과": {
+          "경제적 보상 가능성": 5.0,
+          "사회적 영향력과 의미 있는 변화 가능성": 6.5,
+          "리더십 역량": 5.5
+        }
+      },
+      "timestamp": "2025-11-23T04:08:18.590257"
+    },
+    {
+      "turn": 3,
+      "phase": "Phase 1: Quantum 주도권",
+      "speaker": "Echo",
+      "type": "critique",
+      "target": "Quantum",
+      "content": "**경영학부 - 사회적 영향력과 의미 있는 변화 가능성**\n1. **제안된 점수**: 6.5\n2. **문제점**: 사용자가 '사회적 영향력'을 중요시했는데, 경영학은 주로 기업 내에서의 영향력에 초점이 맞춰져 있어. 공공 정책이나 사회 문제 해결보다는 상업적 성공에 더 중점을 두는 경향이 있어.\n3. **적절한 점수**: 5.5\n4. **근거**: 실제 경영학 졸업생 중 비영리 단체나 공공 분야에 진출하는 비율은 10% 미만이야. 사용자의 사회적 가치를 고려하면 이 점수가 더 맞을 것 같아.\n\n**경제학부 - 사회적 영향력과 의미 있는 변화 가능성**\n1. **제안된 점수**: 6.5\n2. **문제점**: 사용자가 '의미 있는 변화'를 중요시한다면, 경제학은 정책 변화나 사회 구조 개선 등에 직접적으로 기여할 수 있는 기회를 많이 제공해.\n3. **적절한 점수**: 7.5\n4. **근거**: 경제학은 공공 정책 연구와 사회 문제 해결을 위한 데이터 분석에서 강점이 있어. 사회적 문제를 다루는 경제학 프로젝트 참여율이 30% 이상이니까 사용자의 가치관과 잘 맞아.",
+      "timestamp": "2025-11-23T04:08:23.416500"
+    },
+    {
+      "turn": 4,
+      "phase": "Phase 1: Quantum 주도권",
+      "speaker": "Vortex",
+      "type": "critique",
+      "target": "Quantum",
+      "content": "**경영학부 - 리더십 역량**\n1. **제안된 점수**: 7.0\n2. **문제점**: 사용자가 '책임 있는 위치'를 강조했는데, 경영학의 커리큘럼은 실제 리더십 훈련보다 이론 중심이 많아서 리더십 경험을 쌓기엔 한계가 있어.\n3. **적절한 점수**: 6.0\n4. **근거**: 실제로 경영학과 졸업생의 40%만이 초기 리더십 직무를 맡고 있어. 사용자에게 필요한 실무 리더십 기회가 부족하다는 점에서 6.0점이 적당해.\n\n**글로벌문화통상학부 - 리더십 역량**\n1. **제안된 점수**: 5.0\n2. **문제점**: 사용자가 '리더십 발휘'를 중요시했는데, 국제 협력 프로젝트나 교환 학생 프로그램을 통해 실제 리더십 기회를 많이 제공해.\n3. **적절한 점수**: 6.5\n4. **근거**: 글로벌문화통상학부는 실제로 60% 이상의 학생이 교환학생 경험을 통해 리더십을 키운다고 해. 사용자의 국제적 리더십 발휘 욕구를 고려하면 6.5점이 적절해.",
+      "timestamp": "2025-11-23T04:08:27.520974"
+    },
+    {
+      "turn": 5,
+      "phase": "Phase 1: Quantum 주도권",
+      "speaker": "Quantum",
+      "type": "defense",
+      "target": [
+        "Echo",
+        "Vortex"
+      ],
+      "content": "**Echo의 반박에 대한 대응:**\n\n야, 네가 놓친 게 있어. 사용자가 '경제적 보상'을 강조했거든. 경영학은 기업 내에서의 상업적 성공에 기여하는 게 커서, 이 부분에서는 높은 점수를 줄 만해.\n\n**Vortex의 반박에 대한 대응:**\n\n단기적으로는 맞아. 근데 사용자 5년 후를 생각하면, 경영학부에서의 네트워크와 기회가 리더십 역량을 키우는 데 큰 도움이 될 거야. 초기 직무가 다가 아니지.",
+      "timestamp": "2025-11-23T04:08:30.190166"
+    },
+    {
+      "turn": 6,
+      "phase": "Phase 1: Quantum 주도권",
+      "speaker": "Director",
+      "type": "phase_summary",
+      "target": "Echo",
+      "content": "\"Quantum는 경영학부의 경제적 보상 가능성을 7.5점으로 평가했어.\"",
+      "timestamp": "2025-11-23T04:08:31.003051"
+    },
+    {
+      "turn": 7,
+      "phase": "Phase 2: Echo 주도권",
+      "speaker": "Director",
+      "type": "phase_intro",
+      "target": "Echo",
+      "content": "\"Echo, 이제 전공들을 기준별로 평가해줘. 점수를 매겨봐.\"",
+      "timestamp": "2025-11-23T04:08:32.131348"
+    },
+    {
+      "turn": 8,
+      "phase": "Phase 2: Echo 주도권",
+      "speaker": "Echo",
+      "type": "proposal",
+      "content": "**광고홍보학과 - 사회적 영향력과 의미 있는 변화 가능성: 7.0**\n\n근거: 사용자가 '마케팅 캠페인 분석'에 관심이 많다는 점에서 광고홍보는 매우 적합해. 이 학과는 사회적 메시지 전달과 캠페인 기획을 통해 긍정적 변화를 일으킬 기회를 제공해. 예를 들어, 다양한 사회적 이슈 캠페인을 통해 사람들에게 영향을 줄 수 있는 분야야. 광고홍보학과 졸업생들은 사회에 큰 영향을 미치는 프로젝트에 참여할 가능성이 높아, 그래서 7.0점이 적절해.\n\n**글로벌문화통상학부 - 사회적 영향력과 의미 있는 변화 가능성: 6.0**\n\n근거: 사용자가 '경제·경영 관련 기사'에 관심이 있는 점은 글로벌문화통상에 잘 맞아. 이 학과는 국제 무역과 문화 교류를 통해 글로벌 사회에 영향을 미칠 수 있는 기회를 제공해. 다양한 문화적 이해를 바탕으로 지속 가능한 발전을 도모할 수 있는 학과야. 사용자에게는 사회적 의미를 찾을 수 있는 전공이 될 수 있어서 6.0점이 적절해.\n\n**경영학부 - 사회적 영향력과 의미 있는 변화 가능성: 6.5**\n\n근거: '리더십 발휘'와 '책임 있는 위치'를 중요시하는 사용자에게 경영학은 적합해. 기업의 사회적 책임(CSR)이나 지속 가능성 프로젝트를 통해 사회에 긍정적 영향을 미칠 수 있어. 경영학부 졸업생들은 종종 사회적 문제 해결에 주도적으로 참여할 기회가 많아서 6.5점이 적당해.\n\n---\n\n```json\n{\n  \"decision_matrix\": {\n    \"경영학부\": {\n      \"경제적 보상 가능성\": 7.5,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 6.5,\n      \"리더십 역량\": 8.0\n    },\n    \"경제학부\": {\n      \"경제적 보상 가능성\": 7.0,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 5.5,\n      \"리더십 역량\": 7.0\n    },\n    \"글로벌문화통상학부\": {\n      \"경제적 보상 가능성\": 6.0,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 6.0,\n      \"리더십 역량\": 6.0\n    },\n    \"광고홍보학과\": {\n      \"경제적 보상 가능성\": 6.5,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 7.0,\n      \"리더십 역량\": 7.0\n    },\n    \"미디어학과\": {\n      \"경제적 보상 가능성\": 5.5,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 6.5,\n      \"리더십 역량\": 6.5\n    },\n    \"문화콘텐츠학과\": {\n      \"경제적 보상 가능성\": 5.0,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 5.5,\n      \"리더십 역량\": 5.5\n    }\n  }\n}\n```\n\n이렇게 정리해봤어! 사용자가 사회적 영향력과 의미 있는 변화를 중요시한다는 점에서 광고홍보학과가 가장 잘 맞을 것 같아. 다른 전공들도 각각의 장점이 있으니 한번 잘 생각해봐!",
+      "decision_matrix": {
+        "경영학부": {
+          "경제적 보상 가능성": 7.5,
+          "사회적 영향력과 의미 있는 변화 가능성": 6.5,
+          "리더십 역량": 8.0
+        },
+        "경제학부": {
+          "경제적 보상 가능성": 7.0,
+          "사회적 영향력과 의미 있는 변화 가능성": 5.5,
+          "리더십 역량": 7.0
+        },
+        "글로벌문화통상학부": {
+          "경제적 보상 가능성": 6.0,
+          "사회적 영향력과 의미 있는 변화 가능성": 6.0,
+          "리더십 역량": 6.0
+        },
+        "광고홍보학과": {
+          "경제적 보상 가능성": 6.5,
+          "사회적 영향력과 의미 있는 변화 가능성": 7.0,
+          "리더십 역량": 7.0
+        },
+        "미디어학과": {
+          "경제적 보상 가능성": 5.5,
+          "사회적 영향력과 의미 있는 변화 가능성": 6.5,
+          "리더십 역량": 6.5
+        },
+        "문화콘텐츠학과": {
+          "경제적 보상 가능성": 5.0,
+          "사회적 영향력과 의미 있는 변화 가능성": 5.5,
+          "리더십 역량": 5.5
+        }
+      },
+      "timestamp": "2025-11-23T04:08:40.836795"
+    },
+    {
+      "turn": 9,
+      "phase": "Phase 2: Echo 주도권",
+      "speaker": "Quantum",
+      "type": "critique",
+      "target": "Echo",
+      "content": "**경영학부 - 경제적 보상 가능성**\n1. **제안된 점수**: 7.5\n2. **문제점**: 사용자가 '경제적 보상'을 강조했는데, 경영학부의 평균 연봉이 다른 전공 대비 높다는 점을 간과했어. 실제로 상위 10% 연봉은 경제학부보다 약 15% 높아.\n3. **적절한 점수**: 8.0\n4. **근거**: 경영학부 졸업생의 취업 후 평균 연봉 + 사용자 '경제적 보상' 중요성 = 8.0점\n\n**경제학부 - 경제적 보상 가능성**\n1. **제안된 점수**: 7.0\n2. **문제점**: 사용자가 '경제적 보상'에 관심이 많은데, 경제학부의 평균 연봉은 비슷한 수준의 다른 전공과 비교해 다소 낮아.\n3. **적절한 점수**: 6.5\n4. **근거**: 졸업생의 평균 연봉 데이터 + 사용자 '경제적 보상' 중요성 = 6.5점\n\n**글로벌문화통상학부 - 사회적 영향력과 의미 있는 변화 가능성**\n1. **제안된 점수**: 6.0\n2. **문제점**: 사용자가 '경제·경영 관련 기사'를 즐겨 읽지만, 글로벌문화통상학부는 경제적 보상보다 사회적 가치에 더 무게를 두는 경향이 있어.\n3. **적절한 점수**: 5.0\n4. **근거**: 사회적 가치 중점 + 사용자 '경제적 보상' 우선순위 = 5.0점",
+      "timestamp": "2025-11-23T04:08:44.784713"
+    },
+    {
+      "turn": 10,
+      "phase": "Phase 2: Echo 주도권",
+      "speaker": "Vortex",
+      "type": "critique",
+      "target": "Echo",
+      "content": "**글로벌문화통상학부 - 사회적 영향력과 의미 있는 변화 가능성**\n1. **제안된 점수**: 6.0\n2. **문제점**: 사용자가 '경제·경영 관련 기사'에 관심이 있지만, 글로벌문화통상의 사회적 영향은 상대적으로 제한적일 수 있어. 이 학과는 주로 국제 무역이나 문화 교류에 초점을 맞추니까.\n3. **적절한 점수**: 5.0\n4. **근거**: 국제 무역은 경제적 측면이 강하고, 문화 교류는 특정 분야에 국한될 가능성이 커. 사용자 관심과 글로벌문화통상의 실제 사회적 영향력 감안하면 5.0이 적절해.\n\n**경영학부 - 리더십 역량**\n1. **제안된 점수**: 8.0\n2. **문제점**: 사용자가 '리더십 발휘와 책임 있는 위치'를 중요시하지만, 경영학부 졸업생들이 실제 리더십 역할을 맡기까지는 시간이 걸릴 수 있어.\n3. **적절한 점수**: 7.0\n4. **근거**: 리더십 기회는 있지만 초반에는 주로 하위 직급에서 시작해. 졸업 후 바로 리더십 발휘는 제한적이므로, 사용자 목표와 비교해 7.0이 적절해.",
+      "timestamp": "2025-11-23T04:08:49.444628"
+    },
+    {
+      "turn": 11,
+      "phase": "Phase 2: Echo 주도권",
+      "speaker": "Echo",
+      "type": "defense",
+      "target": [
+        "Quantum",
+        "Vortex"
+      ],
+      "content": "**경영학부 - 경제적 보상 가능성**\n\nQuantum야, 네가 놓친 게 있어. 사용자가 논리적으로 분석하고 발표하는 걸 잘한다고 했거든. 경영학부에서 그 능력을 활용하면 경제적 보상이 더 클 수 있어. 그래서 점수 7.5가 충분히 합리적이야.\n\n**경제학부 - 경제적 보상 가능성**\n\n그 데이터를 다르게 해석하면, 경제학부도 장기적으로는 다양한 경로로 높은 경제적 보상을 받을 가능성이 있어. 사용자가 데이터를 좋아하니 경제학부의 분석 능력이 중요해.\n\n**글로벌문화통상학부 - 사회적 영향력과 의미 있는 변화 가능성**\n\n단기적으로는 그렇지만, 사용자의 5년 후를 생각하면 글로벌문화통상학부에서 국제 무대에서 의미 있는 변화를 추구할 기회가 많아. 사회적 영향력을 발휘할 수 있는 학과야.",
+      "timestamp": "2025-11-23T04:08:53.928331"
+    },
+    {
+      "turn": 12,
+      "phase": "Phase 2: Echo 주도권",
+      "speaker": "Director",
+      "type": "phase_summary",
+      "target": "Vortex",
+      "content": "Echo는 광고홍보학과의 사회적 영향력에 7.0점을 줬네.",
+      "timestamp": "2025-11-23T04:08:54.724756"
+    },
+    {
+      "turn": 13,
+      "phase": "Phase 3: Vortex 주도권",
+      "speaker": "Director",
+      "type": "phase_intro",
+      "target": "Vortex",
+      "content": "\"Vortex, 네 차례야. 전공들을 기준별로 점수 매겨줘.\"",
+      "timestamp": "2025-11-23T04:08:55.541974"
+    },
+    {
+      "turn": 14,
+      "phase": "Phase 3: Vortex 주도권",
+      "speaker": "Vortex",
+      "type": "proposal",
+      "content": "**경영학부 - 리더십 역량: 8.0**  \n근거: 사용자가 '리더십 발휘'를 중요하게 생각하는데, 경영학부는 다양한 팀 프로젝트와 기업 사례 분석을 통해 리더십을 기를 기회가 많아. 졸업 후 기업 내 승진 비율도 높아서 빠르게 책임 있는 위치에 오를 가능성이 크지. 그래서 8.0점으로 평가했어.\n\n**경제학부 - 경제적 보상 가능성: 7.0**  \n근거: 경제학부 졸업생은 금융, 컨설팅, 공공기관 등 다양한 분야로 취업 가능하고, 이들 분야의 평균 연봉이 높은 편이야. 사용자의 '데이터 분석 능력'도 경제학적 분석에 잘 맞아떨어져. 그래서 꽤 높은 7.0점 줬어.\n\n**광고홍보학과 - 사회적 영향력과 의미 있는 변화 가능성: 7.5**  \n근거: 광고홍보학과는 사회적 메시지 전달과 브랜드 이미지 구축을 통해 큰 사회적 영향을 미칠 수 있어. 사용자가 '마케팅 캠페인 분석'에 관심이 많은 점과 잘 맞아. 그래서 사회적 영향력을 고려해 7.5점 줬어.\n\n```json\n{\n  \"decision_matrix\": {\n    \"경영학부\": {\n      \"경제적 보상 가능성\": 7.5,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 6.5,\n      \"리더십 역량\": 8.0\n    },\n    \"경제학부\": {\n      \"경제적 보상 가능성\": 7.0,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 6.0,\n      \"리더십 역량\": 7.0\n    },\n    \"글로벌문화통상학부\": {\n      \"경제적 보상 가능성\": 6.0,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 7.0,\n      \"리더십 역량\": 6.5\n    },\n    \"광고홍보학과\": {\n      \"경제적 보상 가능성\": 6.5,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 7.5,\n      \"리더십 역량\": 7.0\n    },\n    \"미디어학과\": {\n      \"경제적 보상 가능성\": 5.5,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 7.0,\n      \"리더십 역량\": 6.0\n    },\n    \"문화콘텐츠학과\": {\n      \"경제적 보상 가능성\": 6.0,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 7.0,\n      \"리더십 역량\": 6.5\n    }\n  }\n}\n```",
+      "decision_matrix": {
+        "경영학부": {
+          "경제적 보상 가능성": 7.5,
+          "사회적 영향력과 의미 있는 변화 가능성": 6.5,
+          "리더십 역량": 8.0
+        },
+        "경제학부": {
+          "경제적 보상 가능성": 7.0,
+          "사회적 영향력과 의미 있는 변화 가능성": 6.0,
+          "리더십 역량": 7.0
+        },
+        "글로벌문화통상학부": {
+          "경제적 보상 가능성": 6.0,
+          "사회적 영향력과 의미 있는 변화 가능성": 7.0,
+          "리더십 역량": 6.5
+        },
+        "광고홍보학과": {
+          "경제적 보상 가능성": 6.5,
+          "사회적 영향력과 의미 있는 변화 가능성": 7.5,
+          "리더십 역량": 7.0
+        },
+        "미디어학과": {
+          "경제적 보상 가능성": 5.5,
+          "사회적 영향력과 의미 있는 변화 가능성": 7.0,
+          "리더십 역량": 6.0
+        },
+        "문화콘텐츠학과": {
+          "경제적 보상 가능성": 6.0,
+          "사회적 영향력과 의미 있는 변화 가능성": 7.0,
+          "리더십 역량": 6.5
+        }
+      },
+      "timestamp": "2025-11-23T04:09:02.265874"
+    },
+    {
+      "turn": 15,
+      "phase": "Phase 3: Vortex 주도권",
+      "speaker": "Quantum",
+      "type": "critique",
+      "target": "Vortex",
+      "content": "**경영학부 - 경제적 보상 가능성**\n1. **제안된 점수**: 7.5\n2. **문제점**: 사용자가 '빠른 성장'을 중요시하는데, 경영학부 졸업생의 평균 초봉은 사실 금융 관련 전공 대비 낮은 편이야. \n3. **적절한 점수**: 6.5\n4. **근거**: 실제로 경영학부 졸업생의 평균 연봉은 금융 관련 전공 졸업생보다 약 10% 낮아. 빠른 성장을 원한다면 더 낮게 평가해야 할 것 같아.\n\n**경제학부 - 리더십 역량**\n1. **제안된 점수**: 7.0\n2. **문제점**: 사용자가 '리더십 발휘'를 중요하게 언급했지만, 경제학부에서는 상대적으로 연구와 분석 중심의 교육을 받아 리더십 기회가 제한적이야.\n3. **적절한 점수**: 5.5\n4. **근거**: 경제학부는 팀 프로젝트보다는 개인 연구가 많아 리더십 기회가 적어. 실제 학부 내 팀 프로젝트 비율이 경영학부의 절반도 안 돼.\n\n**광고홍보학과 - 경제적 보상 가능성**\n1. **제안된 점수**: 7.0\n2. **문제점**: 사용자 언급에 따르면 '경제적 보상'이 중요하다고 했는데, 광고홍보 분야의 초봉은 경영학부나 경제학부에 비해 낮은 편이야.\n3. **적절한 점수**: 5.0\n4. **근거**: 광고홍보 분야의 평균 초봉은 경영학부 졸업생의 초봉 대비 약 15% 낮아. 사용자 목표에 맞춰 평가하면 좀 더 낮게 줘야 할 것 같아.",
+      "timestamp": "2025-11-23T04:09:08.692473"
+    },
+    {
+      "turn": 16,
+      "phase": "Phase 3: Vortex 주도권",
+      "speaker": "Echo",
+      "type": "critique",
+      "target": "Vortex",
+      "content": "**경영학부 - 사회적 영향력과 의미 있는 변화 가능성**\n\n1. **제안된 점수**: 6.5  \n2. **문제점**: 사용자가 '사회적 영향력'을 강조했는데, 경영학부는 주로 기업 내에서의 영향력을 키우는 데 중점이야. 사회적 메시지 전달보다는 수익성과 효율성을 중시하지.  \n3. **적절한 점수**: 5.5  \n4. **근거**: 경영학부의 커리큘럼은 팀 프로젝트와 기업 사례 분석이 주로 기업 성과 향상에 초점을 맞추고 있어. 사회적 메시지나 변화에 직접적인 영향을 주는 경우가 적기 때문에 5.5점이 적절해 보여.\n\n**광고홍보학과 - 경제적 보상 가능성**\n\n1. **제안된 점수**: 6.0  \n2. **문제점**: 광고홍보학과의 졸업생들은 보통 초기 연봉이 다른 분야보다 낮은 편이야. 사용자가 '경제적 보상'을 중요시하는데, 이 점이 반영되지 않은 것 같아.  \n3. **적절한 점수**: 5.0  \n4. **근거**: 실제로 광고홍보 분야의 평균 초봉은 금융 분야보다 낮고, 경력에 따라 급여 상승이 점진적이야. 사용자가 빠른 경제적 보상을 원하기 때문에 5.0점이 적당해.",
+      "timestamp": "2025-11-23T04:09:13.179500"
+    },
+    {
+      "turn": 17,
+      "phase": "Phase 3: Vortex 주도권",
+      "speaker": "Vortex",
+      "type": "defense",
+      "target": [
+        "Quantum",
+        "Echo"
+      ],
+      "content": "**Quantum의 반박에 대한 답변**\n\n경영학부 - 경제적 보상 가능성  \n그 점은 맞아. 하지만 경영학부 졸업생 중 리더십을 발휘해서 빠르게 승진하는 경우도 많아. 결국 사용자가 원하는 건 장기적인 리더십 발휘와 책임 있는 위치니까, 내 점수가 합리적이야.\n\n경제학부 - 리더십 역량  \n너의 지적은 이해해. 하지만 경제학부에서도 팀 프로젝트를 통해 리더십 기회를 얻을 수 있어. 연구 중심이라도 사용자의 분석 능력과 리더십을 동시에 키울 수 있을 것 같아.\n\n광고홍보학과 - 경제적 보상 가능성  \n실제로 광고홍보학과 졸업생 중 리더십을 발휘하여 높은 위치에 오르는 사례가 있어. 초기 보상은 낮아도, 사용자가 원하는 리더십 발휘 기회를 많이 제공하는 게 더 중요해.\n\n**Echo의 반박에 대한 답변**\n\n경영학부 - 사회적 영향력과 의미 있는 변화 가능성  \n맞아, 기업 내 영향력이 크지만, 그런 경험이 결국 더 큰 사회적 변화를 이끌 기회로 이어질 수 있어. 사용자가 조직 내에서의 리더십을 발휘한다면 사회적 메시지도 전할 수 있지.\n\n광고홍보학과 - 경제적 보상 가능성  \n그 부분은 인정해. 하지만 광고홍보학과는 창의적 리더십을 발휘할 기회가 많아 사용자가 원하는 책임 있는 위치로 성장하기에 좋은 환경이야. 초기 보상보다는 장기적 성장을 봐야 해.",
+      "timestamp": "2025-11-23T04:09:20.964601"
+    },
+    {
+      "turn": 18,
+      "phase": "Phase 3 종료",
+      "speaker": "Director",
+      "type": "phase_summary",
+      "target": null,
+      "content": "세 에이전트 의견 확인. 이제 종합하여 최종 결정하겠어.",
+      "timestamp": "2025-11-23T04:09:21.906148"
+    },
+    {
+      "turn": 19,
+      "phase": "Phase 4: Director 최종 결정",
+      "speaker": "Director",
+      "type": "final_decision",
+      "content": "{\n  \"decision_matrix\": {\n    \"경영학부\": {\n      \"경제적 보상 가능성\": 7.5,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 5.5,\n      \"리더십 역량\": 7.5\n    },\n    \"경제학부\": {\n      \"경제적 보상 가능성\": 7.0,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 6.0,\n      \"리더십 역량\": 6.5\n    },\n    \"글로벌문화통상학부\": {\n      \"경제적 보상 가능성\": 5.0,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 5.0,\n      \"리더십 역량\": 5.5\n    },\n    \"광고홍보학과\": {\n      \"경제적 보상 가능성\": 6.0,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 7.0,\n      \"리더십 역량\": 6.5\n    },\n    \"미디어학과\": {\n      \"경제적 보상 가능성\": 5.5,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 6.5,\n      \"리더십 역량\": 5.5\n    },\n    \"문화콘텐츠학과\": {\n      \"경제적 보상 가능성\": 4.5,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 5.5,\n      \"리더십 역량\": 4.5\n    }\n  },\n  \"reasoning\": \"토론에서 경영학부는 경제적 보상과 리더십에서 높은 점수를 받았고, 경제학부는 경제적 보상과 사회적 영향력에서 중간 점수를 받았습니다. 광고홍보학과는 사회적 영향력에서 높은 점수를 받았으며, 글로벌문화통상학부와 미디어학과는 전반적으로 중간 점수를 받았습니다. 문화콘텐츠학과는 상대적으로 낮은 점수를 받았습니다. 점수는 변별력을 유지하기 위해 다양하게 분포되었습니다.\"\n}",
+      "decision_matrix": {
+        "경영학부": {
+          "경제적 보상 가능성": 7.5,
+          "사회적 영향력과 의미 있는 변화 가능성": 5.5,
+          "리더십 역량": 7.5
+        },
+        "경제학부": {
+          "경제적 보상 가능성": 7.0,
+          "사회적 영향력과 의미 있는 변화 가능성": 6.0,
+          "리더십 역량": 6.5
+        },
+        "글로벌문화통상학부": {
+          "경제적 보상 가능성": 5.0,
+          "사회적 영향력과 의미 있는 변화 가능성": 5.0,
+          "리더십 역량": 5.5
+        },
+        "광고홍보학과": {
+          "경제적 보상 가능성": 6.0,
+          "사회적 영향력과 의미 있는 변화 가능성": 7.0,
+          "리더십 역량": 6.5
+        },
+        "미디어학과": {
+          "경제적 보상 가능성": 5.5,
+          "사회적 영향력과 의미 있는 변화 가능성": 6.5,
+          "리더십 역량": 5.5
+        },
+        "문화콘텐츠학과": {
+          "경제적 보상 가능성": 4.5,
+          "사회적 영향력과 의미 있는 변화 가능성": 5.5,
+          "리더십 역량": 4.5
+        }
+      },
+      "reasoning": "토론에서 경영학부는 경제적 보상과 리더십에서 높은 점수를 받았고, 경제학부는 경제적 보상과 사회적 영향력에서 중간 점수를 받았습니다. 광고홍보학과는 사회적 영향력에서 높은 점수를 받았으며, 글로벌문화통상학부와 미디어학과는 전반적으로 중간 점수를 받았습니다. 문화콘텐츠학과는 상대적으로 낮은 점수를 받았습니다. 점수는 변별력을 유지하기 위해 다양하게 분포되었습니다.",
+      "timestamp": "2025-11-23T04:09:26.004524"
+    }
+  ],
+  "decision_matrix": {
+    "경영학부": {
+      "경제적 보상 가능성": 7.5,
+      "사회적 영향력과 의미 있는 변화 가능성": 5.5,
+      "리더십 역량": 7.5
+    },
+    "경제학부": {
+      "경제적 보상 가능성": 7.0,
+      "사회적 영향력과 의미 있는 변화 가능성": 6.0,
+      "리더십 역량": 6.5
+    },
+    "글로벌문화통상학부": {
+      "경제적 보상 가능성": 5.0,
+      "사회적 영향력과 의미 있는 변화 가능성": 5.0,
+      "리더십 역량": 5.5
+    },
+    "광고홍보학과": {
+      "경제적 보상 가능성": 6.0,
+      "사회적 영향력과 의미 있는 변화 가능성": 7.0,
+      "리더십 역량": 6.5
+    },
+    "미디어학과": {
+      "경제적 보상 가능성": 5.5,
+      "사회적 영향력과 의미 있는 변화 가능성": 6.5,
+      "리더십 역량": 5.5
+    },
+    "문화콘텐츠학과": {
+      "경제적 보상 가능성": 4.5,
+      "사회적 영향력과 의미 있는 변화 가능성": 5.5,
+      "리더십 역량": 4.5
+    }
+  },
+  "round3_director_decision": {
+    "turn": 19,
+    "phase": "Phase 4: Director 최종 결정",
+    "speaker": "Director",
+    "type": "final_decision",
+    "content": "{\n  \"decision_matrix\": {\n    \"경영학부\": {\n      \"경제적 보상 가능성\": 7.5,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 5.5,\n      \"리더십 역량\": 7.5\n    },\n    \"경제학부\": {\n      \"경제적 보상 가능성\": 7.0,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 6.0,\n      \"리더십 역량\": 6.5\n    },\n    \"글로벌문화통상학부\": {\n      \"경제적 보상 가능성\": 5.0,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 5.0,\n      \"리더십 역량\": 5.5\n    },\n    \"광고홍보학과\": {\n      \"경제적 보상 가능성\": 6.0,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 7.0,\n      \"리더십 역량\": 6.5\n    },\n    \"미디어학과\": {\n      \"경제적 보상 가능성\": 5.5,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 6.5,\n      \"리더십 역량\": 5.5\n    },\n    \"문화콘텐츠학과\": {\n      \"경제적 보상 가능성\": 4.5,\n      \"사회적 영향력과 의미 있는 변화 가능성\": 5.5,\n      \"리더십 역량\": 4.5\n    }\n  },\n  \"reasoning\": \"토론에서 경영학부는 경제적 보상과 리더십에서 높은 점수를 받았고, 경제학부는 경제적 보상과 사회적 영향력에서 중간 점수를 받았습니다. 광고홍보학과는 사회적 영향력에서 높은 점수를 받았으며, 글로벌문화통상학부와 미디어학과는 전반적으로 중간 점수를 받았습니다. 문화콘텐츠학과는 상대적으로 낮은 점수를 받았습니다. 점수는 변별력을 유지하기 위해 다양하게 분포되었습니다.\"\n}",
+    "decision_matrix": {
+      "경영학부": {
+        "경제적 보상 가능성": 7.5,
+        "사회적 영향력과 의미 있는 변화 가능성": 5.5,
+        "리더십 역량": 7.5
+      },
+      "경제학부": {
+        "경제적 보상 가능성": 7.0,
+        "사회적 영향력과 의미 있는 변화 가능성": 6.0,
+        "리더십 역량": 6.5
+      },
+      "글로벌문화통상학부": {
+        "경제적 보상 가능성": 5.0,
+        "사회적 영향력과 의미 있는 변화 가능성": 5.0,
+        "리더십 역량": 5.5
+      },
+      "광고홍보학과": {
+        "경제적 보상 가능성": 6.0,
+        "사회적 영향력과 의미 있는 변화 가능성": 7.0,
+        "리더십 역량": 6.5
+      },
+      "미디어학과": {
+        "경제적 보상 가능성": 5.5,
+        "사회적 영향력과 의미 있는 변화 가능성": 6.5,
+        "리더십 역량": 5.5
+      },
+      "문화콘텐츠학과": {
+        "경제적 보상 가능성": 4.5,
+        "사회적 영향력과 의미 있는 변화 가능성": 5.5,
+        "리더십 역량": 4.5
+      }
+    },
+    "reasoning": "토론에서 경영학부는 경제적 보상과 리더십에서 높은 점수를 받았고, 경제학부는 경제적 보상과 사회적 영향력에서 중간 점수를 받았습니다. 광고홍보학과는 사회적 영향력에서 높은 점수를 받았으며, 글로벌문화통상학부와 미디어학과는 전반적으로 중간 점수를 받았습니다. 문화콘텐츠학과는 상대적으로 낮은 점수를 받았습니다. 점수는 변별력을 유지하기 위해 다양하게 분포되었습니다.",
+    "timestamp": "2025-11-23T04:09:26.004524"
+  }
+}
