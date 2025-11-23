@@ -20,7 +20,6 @@ interface ReviewExportProps {
 export function ReviewExport({
   recommendations,
   candidateMajors,
-  agents,
   criteriaWeights: propCriteriaWeights,
   decisionMatrix: propDecisionMatrix
 }: ReviewExportProps) {
@@ -141,12 +140,12 @@ export function ReviewExport({
                   {/* Rank Badge */}
                   <div
                     className={`flex items-center justify-center size-16 rounded-full shrink-0 ${rank === 1
-                      ? "bg-gradient-to-br from-yellow-400 to-yellow-600"
+                      ? "bg-linear-to-br from-yellow-400 to-yellow-600"
                       : rank === 2
-                        ? "bg-gradient-to-br from-gray-300 to-gray-500"
+                        ? "bg-linear-to-br from-gray-300 to-gray-500"
                         : rank === 3
-                          ? "bg-gradient-to-br from-orange-400 to-orange-600"
-                          : "bg-gradient-to-br from-gray-500 to-gray-700"
+                          ? "bg-linear-to-br from-orange-400 to-orange-600"
+                          : "bg-linear-to-br from-gray-500 to-gray-700"
                       }`}
                   >
                     <span className="text-white text-xl font-bold">#{rank}</span>
@@ -204,7 +203,7 @@ export function ReviewExport({
                     <div className="w-full">
                       <div className="w-full bg-[#1b1f27] rounded-full h-2 overflow-hidden">
                         <div
-                          className="bg-gradient-to-r from-[#FF1F55] to-[#FF4572] h-full transition-all duration-500"
+                          className="bg-linear-to-r from-[#FF1F55] to-[#FF4572] h-full transition-all duration-500"
                           style={{ width: `${topsisScore * 100}%` }}
                         />
                       </div>
@@ -237,7 +236,7 @@ export function ReviewExport({
                 </div>
                 <div className="h-1.5 bg-[#1b1f27] rounded-full overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-[#FF1F55] to-[#FF4572] h-full transition-all duration-500"
+                    className="bg-linear-to-r from-[#FF1F55] to-[#FF4572] h-full transition-all duration-500"
                     style={{ width: `${item.weight * 2}%` }}
                   />
                 </div>

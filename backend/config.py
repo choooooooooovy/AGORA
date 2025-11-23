@@ -20,7 +20,7 @@ class Config:
     DIRECTOR_TEMPERATURE = float(os.getenv("DIRECTOR_TEMPERATURE", "0.0"))
     
     # AHP 설정
-    MAX_CRITERIA = int(os.getenv("MAX_CRITERIA", "5"))
+    MAX_CRITERIA = int(os.getenv("MAX_CRITERIA", "4"))
     MAX_CR = float(os.getenv("MAX_CR", "0.10"))
     MAX_AHP_RETRIES = int(os.getenv("MAX_AHP_RETRIES", "3"))
     

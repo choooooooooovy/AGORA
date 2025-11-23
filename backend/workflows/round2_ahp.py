@@ -256,26 +256,28 @@ def _director_phase_summary(state, finished_agent, next_agent, phase, debate_his
     current_phase_turns = [t for t in debate_history if f"Phase {phase}" in t.get('phase', '')]
     phase_summary = "\n".join([f"[{t['speaker']}]: {t['content'][:100]}..." for t in current_phase_turns[-4:]])
     
-    system_prompt = """You are a friendly debate moderator."""
+    system_prompt = """You are a friendly debate moderator. Your role is to summarize what was discussed with rich context and insight."""
     
     user_prompt = f"""
-{finished_agent['name']} finished their pairwise comparison proposal.
+{finished_agent['name']} just finished presenting their pairwise comparison approach.
 
 Recent discussion:
 {phase_summary}
 
 Next agent: {next_agent['name']}
 
-**Write a concise summary (1 sentence) that:**
-1. Summarizes ONLY {finished_agent['name']}'s SPECIFIC comparison approach or key scores (use concrete examples)
-2. Keep it brief and focused on what was discussed
-3. Do NOT introduce or mention {next_agent['name']} - they will be introduced separately
+**Write a rich summary (2-3 sentences) that:**
+1. Summarizes the SPECIFIC comparison logic and key scores {finished_agent['name']} proposed (use concrete examples)
+2. Explain the REASONING/LOGIC behind the pairwise comparisons - WHY these scores matter, what logic or evidence was used
+3. Connect to USER's characteristics or goals mentioned in the discussion
+4. Highlight what makes {finished_agent['name']}'s perspective unique
+5. Do NOT introduce or mention {next_agent['name']} - they will be introduced separately
 
-**Tone:** Casual moderator
-**Length:** 50-80 characters
+**Tone:** Casual moderator providing insightful commentary
+**Length:** 150-250 characters
 
 **GOOD Example:**
-"{finished_agent['name']}는 '경제성 vs 창의성'을 3.0으로 평가했네."
+"{finished_agent['name']}는 '경제성'과 '창의성'을 비교할 때, 사용자의 실용적 성향을 반영해 경제성에 더 높은 점수를 줬어. 논리적 근거와 실제 사례를 들어 쌍대비교의 타당성을 강조했네."
 
 **ALL output MUST be in Korean.**
 """

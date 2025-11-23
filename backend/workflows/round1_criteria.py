@@ -154,7 +154,7 @@ def _director_phase_summary(
     phase_summary = "\n".join([f"[{t['speaker']}]: {t['content'][:100]}..." for t in current_phase_turns[-4:]])
     
     system_prompt = """You are a friendly debate moderator.
-Your role is to briefly summarize what was discussed and smoothly transition to the next agent."""
+Your role is to summarize what was discussed with rich context and insight."""
     
     user_prompt = f"""
 {finished_agent['name']} just finished presenting their perspective on evaluation criteria.
@@ -164,22 +164,26 @@ Recent discussion:
 
 Next agent: {next_agent['name']}
 
-**Write a concise summary (1 sentence) that:**
-1. Summarizes ONLY {finished_agent['name']}'s SPECIFIC proposed criteria or main argument (use concrete terms from discussion)
-2. Keep it brief and focused on what was discussed
-3. Do NOT introduce or mention {next_agent['name']} - they will be introduced separately
+**Write a rich summary (2-3 sentences) that:**
+1. Summarizes the SPECIFIC criteria {finished_agent['name']} proposed (use concrete criterion names)
+2. Explain the REASONING/LOGIC behind the proposals - WHY these criteria matter
+3. Connect to USER's characteristics mentioned in the discussion
+4. Highlight what makes {finished_agent['name']}'s perspective unique
+5. Do NOT introduce or mention {next_agent['name']} - they will be introduced separately
 
-**Tone:** Casual moderator
-**Length:** 50-80 characters
+**Tone:** Casual moderator providing insightful commentary
+**Length:** 150-250 characters
 
-**GOOD Examples:**
-- "{finished_agent['name']}는 데이터 기반 의사결정 능력을 핵심 기준으로 제안했어."
-- "{finished_agent['name']}가 학문적 깊이와 연구 기회를 강조했네."
-- "{finished_agent['name']}는 창의적 문제 해결 역량을 중요하게 봤어."
+**GOOD Example:**
+"{finished_agent['name']}는 '데이터 분석 역량'과 '문제 해결 방법론'을 제안했어. 
+사용자가 논리적 사고를 강조한 점에 주목해서, 각 학과의 데이터 중심 커리큘럼과 
+실전 문제 해결 교육을 평가 기준으로 삼자고 했네. 
+특히 이론뿐 아니라 실무 적용 능력을 중시하는 관점이 돋보였어."
 
-**BAD Examples (DON'T use):**
-- "{finished_agent['name']}는 중요성을 강조했네" (X - 너무 추상적, 구체적인 기준명 없음)
-- "{finished_agent['name']}가 좋은 의견을 냈어. 이제 {next_agent['name']}야~" (X - 다음 agent 언급 금지)
+**BAD Examples:**
+- "{finished_agent['name']}는 중요한 기준을 제안했어." (X - 너무 추상적)
+- "{finished_agent['name']}가 두 가지 기준을 말했네." (X - 구체적 내용 없음)
+- "{finished_agent['name']}의 의견이 좋았어. 이제 {next_agent['name']}야~" (X - 다음 agent 언급 금지)
 
 **ALL your output MUST be in Korean.**
 """
@@ -272,31 +276,45 @@ User Information:
 {user_input.get('core_values', 'N/A')}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-**Now it's your turn. Propose evaluation criteria you think are important from your perspective.**
+**Now it's your turn. Propose 2 evaluation criteria that reflect your unique perspective.**
 
-[Important Points]
-1. Don't mention specific majors. Focus on the criteria itself.
-2. **Clearly** show your perspective (persona).
-3. Interpret the user's interests/aptitudes/values from your viewpoint.
-4. Explain concretely how to measure this criterion.
+[Critical Requirements]
+1. Propose exactly **2 criteria** from your perspective
+2. Both criteria must align with YOUR persona/identity, but approach from different angles
+3. Don't mention specific majors - focus on criteria themselves
+4. Each criterion needs: name, reasoning (WHY this criterion matters deeply)
+5. Focus on WHY the criterion is important - explain the underlying logic, values, and connections to user traits
+6. Don't explain HOW to measure - focus on WHY it matters
 
-**How to structure your proposal:**
-Express naturally in conversational style. Include these elements:
-- What criterion you're proposing (name it clearly)
-- Why it matters from YOUR perspective (refer to user's traits)
-- How this criterion can be evaluated (mention concrete indicators)
-- Provide specific examples or data if possible
+**Output Format (JSON):**
+{{
+  "criteria": [
+    {{
+      "name": "[Criterion name in Korean]",
+      "reasoning": "[WHY this criterion matters from YOUR perspective. Connect to user's traits, explain the underlying logic and value. Be specific and deep. 200-300 chars]"
+    }},
+    {{
+      "name": "[Second criterion name in Korean]",
+      "reasoning": "[WHY this criterion matters from YOUR perspective. Deep explanation with clear logic. 200-300 chars]"
+    }}
+  ]
+}}
 
-**Example structure (but write naturally, not mechanically):**
-"내 관점에서 보면 '[기준명]'이 정말 중요해. 왜냐하면 [사용자 특성 연결]... 
-이걸 평가하려면 [구체적 지표들]을 보면 돼. 예를 들어 [실제 예시나 데이터]..."
+**Example (for a logic/data-focused agent):**
+{{
+  "criteria": [
+    {{
+      "name": "데이터 분석 역량",
+      "reasoning": "사용자가 논리적 사고와 문제 해결을 강조했잖아. 현대 사회에서 데이터는 객관적 의사결정의 핵심이야. 단순히 숫자를 다루는 게 아니라, 데이터 속에서 패턴과 인사이트를 찾아내고 이를 실질적 해결책으로 연결하는 능력이 필요해. 각 학과가 이런 역량을 얼마나 체계적으로 키워주는지가 중요한 거지."
+    }},
+    {{
+      "name": "문제 해결 방법론",
+      "reasoning": "논리적 사고력이 뛰어난 사용자에게는 체계적인 문제 해결 프레임워크가 중요해. 단순 암기가 아니라 복잡한 문제를 분석하고, 여러 해결 방안을 비교하며, 최적의 솔루션을 도출하는 과정을 배워야 해. 이런 방법론을 학습하면 어떤 분야에서든 적용 가능한 핵심 역량이 되거든."
+    }}
+  ]
+}}
 
-**Length:** About 200-300 characters
-**DON'T** use rigid formats like "측정 방법: 1. 2. 3."
-**DO** speak naturally while including all necessary information
-
-**Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
-**ALL your output MUST be in Korean.**
+**Output only valid JSON, no extra text or markdown.**
 """
     
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
@@ -353,11 +371,11 @@ Stance: {questioner['debate_stance']}
 3. Check if the measurement method is specific, valid, and feasible.
 
 **Critique Strategy - Use diverse patterns with evidence:**
-Pattern 1 - Point out weakness with data: "○○에게 묻고 싶은데, 그 기준은 [구체적 약점]이 있어. 실제로 [데이터/사례]를 보면..."
+Pattern 1 - Point out weakness with data: "{target_agent['name']}야, 그 기준은 [구체적 약점]이 있어. 실제로 [데이터/사례]를 보면..."
 Pattern 2 - Suggest alternative with reasoning: "그것보다 [대안]이 더 중요해. 왜냐하면 사용자가 '[키워드]'를 강조했잖아."
 Pattern 3 - Challenge with counter-evidence: "근데 [연구/통계]에 따르면 [반대 사실]인데, 어떻게 생각해?"
 Pattern 4 - Raise limitation: "만약 [상황]이면 그 기준으로는 [한계]가 드러나지 않을까?"
-Pattern 5 - Request specific measurement: "그걸 어떻게 객관적으로 측정할 건데? 구체적인 방법이 있어?"
+Pattern 5 - Deepen the reasoning: "그 기준이 중요한 이유는 알겠는데, [더 깊은 질문]은 어떻게 볼 거야?"
 
 **CRITICAL Requirements:**
 - Include specific evidence, data, or user keywords in EVERY question
@@ -503,20 +521,21 @@ The following is the content of a 12-turn debate about evaluation criteria for m
 
 ---
 
-**Mission: Based on the above debate content, select the final 3 evaluation criteria.**
+**Mission: Based on the above debate content, select 4 evaluation criteria from the 6 proposed (3 agents × 2 criteria each).**
 
 Selection Principles:
-1. Balance the core values of the three experts
+1. Balance the core values of the three experts (try to include criteria from all agents)
 2. Measurable and specific criteria
 3. Criteria that provide practical help for the user's major selection
 4. **Strictly independent** criteria that don't overlap or duplicate
-5. **Remove any criteria that are too similar** (e.g., if two criteria essentially measure the same thing, keep only the stronger one)
-6. Prioritize criteria that had **strong evidence or concrete examples** in the debate
+5. **Remove any criteria that are too similar** (keep only the stronger one)
+6. Prioritize criteria with **strong evidence or concrete examples** in the debate
 
 **Quality Check:**
-- Are all 3 criteria truly different from each other?
+- Are all 4 criteria truly different from each other?
 - Can each criterion be measured objectively?
 - Does each criterion reflect the user's characteristics?
+- Did you consider all 6 proposed criteria fairly?
 
 Answer in the following JSON format:
 ```json
@@ -526,10 +545,17 @@ Answer in the following JSON format:
       "name": "Criterion name",
       "description": "Criterion description (200+ characters)",
       "source_agent": "Name of proposing Agent",
-      "reasoning": "Reason for selecting this criterion"
+      "reasoning": "Why this criterion was selected (100-150 characters)"
     }}
   ],
-  "summary": "Comprehensive explanation of final decision (300+ characters)"
+  "rejected_criteria": [
+    {{
+      "name": "Criterion name",
+      "source_agent": "Name of proposing Agent",  
+      "reasoning": "Why this criterion was NOT selected (100-150 characters)"
+    }}
+  ],
+  "summary": "Overall decision explanation - connect selected criteria to user traits, explain balance between agents' perspectives (300-500 characters)"
 }}
 ```
 

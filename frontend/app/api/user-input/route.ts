@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       core_values: body.core_values,
       candidate_majors: body.candidate_majors,
       settings: {
-        max_criteria: 5,
+        max_criteria: 4,
         cr_threshold: 0.1,
         cr_max_retries: 3,
         enable_streaming: false,

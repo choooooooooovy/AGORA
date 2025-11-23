@@ -13,7 +13,7 @@ class WorkflowEngine:
         model_name: str = "gpt-4o",
         agent_temperature: float = 0.5,
         director_temperature: float = 0.0,
-        max_criteria: int = 5
+        max_criteria: int = 4
     ):
         """
         WorkflowEngine 초기화

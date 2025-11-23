@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class SessionSettings(BaseModel):
     """세션 설정"""
-    max_criteria: int = Field(default=5, ge=3, le=10, description="Maximum number of criteria")
+    max_criteria: int = Field(default=4, ge=3, le=10, description="Maximum number of criteria")
     cr_threshold: float = Field(default=0.10, ge=0.0, le=0.15, description="Consistency Ratio threshold for AHP")
     cr_max_retries: int = Field(default=3, ge=1, le=5, description="Maximum CR retry attempts")
     enable_streaming: bool = Field(default=False, description="Enable streaming output")
@@ -84,7 +84,7 @@ class UserInput(BaseModel):
                 "core_values": "높은 연봉과 빠른 커리어 성장을 원하며, 글로벌 기업에서 일하고 싶습니다. 하지만 워라밸도 중요하게 생각하고, 사회적으로 의미 있는 일을 하고 싶습니다.",
                 "candidate_majors": ["컴퓨터공학", "전기전자공학", "산업공학", "경영학"],
                 "settings": {
-                    "max_criteria": 5,
+                    "max_criteria": 4,
                     "cr_threshold": 0.10,
                     "cr_max_retries": 3,
                     "enable_streaming": False

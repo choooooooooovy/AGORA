@@ -178,28 +178,39 @@ def _director_phase_summary(state, finished_agent, next_agent, phase, debate_his
     llm = ChatOpenAI(model=Config.OPENAI_MODEL, temperature=0.7, api_key=Config.OPENAI_API_KEY)
     
     current_phase_turns = [t for t in debate_history if f"Phase {phase}" in t.get('phase', '')]
-    phase_summary = "\n".join([f"[{t['speaker']}]: {t['content'][:100]}..." for t in current_phase_turns[-4:]])
+    
+    # 제안 턴 찾기
+    proposal_turn = next((t for t in current_phase_turns if t['type'] == 'proposal'), None)
+    # 비판 턴들 찾기
+    critique_turns = [t for t in current_phase_turns if t['type'] == 'critique']
     
     system_prompt = """You are a friendly debate moderator."""
     
     user_prompt = f"""
 {finished_agent['name']} finished their scoring proposal.
 
-Recent discussion:
-{phase_summary}
+Proposal content:
+{proposal_turn['content'][:600] if proposal_turn else 'N/A'}...
+
+Critiques received:
+{chr(10).join([f"[{c['speaker']}]: {c['content'][:200]}..." for c in critique_turns])}
 
 Next agent: {next_agent['name']}
 
-**Write a concise summary (1 sentence) that:**
-1. Summarizes ONLY {finished_agent['name']}'s SPECIFIC scoring pattern or key scores (use concrete major-criterion examples)
-2. Keep it brief and focused on what was discussed
-3. Do NOT introduce or mention {next_agent['name']} - they will be introduced separately
+**Write a rich summary (2-3 sentences, 150-250 characters) that:**
+1. Summarize {finished_agent['name']}'s SPECIFIC scoring choices with concrete examples (e.g., "기계공학과의 산업 연계성을 8.0으로 평가했는데, 사용자의 안정적 진로 추구와 잘 맞는다고 봤지")
+2. Mention key debates or disagreements from critics (e.g., "다만 다른 에이전트들은 로봇공학의 혁신 가능성 점수에 대해 의견이 갈렸어")
+3. Connect to user characteristics when explaining scores
+4. Do NOT mention {next_agent['name']} - they will be introduced separately
 
-**Tone:** Casual moderator
-**Length:** 50-80 characters
+**Tone:** Casual moderator explaining the debate
+**Length:** 150-250 characters
+
+**BAD Example:**
+"{finished_agent['name']}는 전자공학부의 기술 혁신 가능성을 7.5점으로 평가했어."
 
 **GOOD Example:**
-"{finished_agent['name']}는 컴퓨터전공의 기술력을 8.5점으로 평가했네."
+"{finished_agent['name']}는 전자공학부의 기술 혁신 가능성을 7.5점으로 평가했어. 사용자가 전자기기 구조에 흥미가 많고, 전자공학이 새로운 기기 개발과 혁신이 중요한 분야라는 점에서 적합하다고 봤지. 다만 다른 에이전트들은 산업 연계성 측면에서 조정이 필요하다고 반박했어."
 
 **ALL output MUST be in Korean.**
 """
@@ -366,9 +377,11 @@ Pattern 5 - Potential-based: "사용자의 '[적성]' 능력이 있으면 이 �
 
 ---
 
-2. **전체 Decision Matrix (JSON 형식)**
+2. **Decision Matrix JSON 형식으로 제출**
 
 위 설명한 2-3개 외에도 **모든 전공 × 모든 기준 조합**에 대해 점수 부여해.
+
+**중요: JSON 블록만 제출하고, "전체 Decision Matrix (JSON 형식)" 같은 제목은 쓰지 말 것**
 
 ```json
 {{
@@ -419,7 +432,10 @@ def _agent_critique(state, critic, target_agent, proposal_turn, turn, phase, deb
     
     proposed_matrix = proposal_turn.get('decision_matrix', {})
     
-    # 매트릭스를 표 형식으로 정리 (샘플만)
+    # 전체 매트릭스를 JSON 형식으로 제공하여 정확한 참조 가능하도록
+    matrix_json = json.dumps(proposed_matrix, ensure_ascii=False, indent=2)
+    
+    # 가독성을 위한 샘플 요약도 함께 제공
     matrix_summary = []
     for major, scores in list(proposed_matrix.items())[:2]:  # 전공 2개만
         matrix_summary.append(f"\n[{major}]")
@@ -436,54 +452,59 @@ def _agent_critique(state, critic, target_agent, proposal_turn, turn, phase, deb
 
 {proposal_turn['content'][:500]}...
 
-[Proposed Scores Sample]
+[Complete Proposed Decision Matrix - 정확한 참조를 위해]
+{matrix_json}
+
+[Scores Sample for Reference]
 {matrix_text}
 
 **Based on your perspective ({critic.get('perspective', '핵심 관점')}), point out the problems.**
 
 [Specific Critique Requirements] ⭐ Very Important
 
-**Critique Target:** Select 2-3 (major-criterion) pairs
+**Critique Target:** Select 2-3 (major-criterion) pairs from the decision matrix above
 
-**Critique Strategy - Use diverse patterns:**
-Pattern 1 - Point out overrating: "○○야, [전공]-[기준] 점수가 너무 높은 것 같아. 사용자가 '[키워드]'를 언급했는데 이 전공은..."
-Pattern 2 - Point out underrating: "그 점수는 좀 낮은데? 실제로 [통계/데이터]를 보면..."
-Pattern 3 - Challenge logic: "만약 [전제]라면, [결론] 점수가 나와야 하는데 왜 [현재 점수]야?"
-Pattern 4 - Comparative critique: "다른 전공들과 비교하면 이 점수는..."
-Pattern 5 - Missing perspective: "네 관점에서만 보고 [각도]를 놓친 것 같은데?"
+**CRITICAL: 반드시 위의 decision matrix에서 실제로 제안된 점수를 확인하고 인용할 것!**
+- "제안된 점수: 없음"이라고 쓰지 말 것 - 위 매트릭스에서 실제 점수를 찾아서 명시할 것
+- 만약 특정 조합이 정말 없다면 "제안된 점수: 없음 (추가 필요)"가 아니라 "이 조합에 대한 평가가 누락되었어"라고 자연스럽게 지적할 것
 
-**For each critique, use this structure (mandatory):**
+**Critique Style - 문장형으로 자연스럽게 작성 (번호 형식 사용 금지):**
 
-**[Major Name] - [Criterion Name]**
-1. **Proposed Score**: X.X
-2. **Problem**: [Quote user keywords] + [Present actual major characteristics]
-3. **Appropriate Score**: Y.Y
-4. **Rationale**: [Specific numbers/ratios/examples] + [Score calculation logic]
+Pattern 1 - Point out overrating:
+"[전공명]의 [기준명]을 [X.X]점으로 평가했는데, 이건 좀 높은 것 같아. 사용자가 '[키워드]'를 언급했지만, 이 전공은 [구체적 특성]이라서 [Y.Y]점이 더 적절할 것 같아. 왜냐하면 [근거]..."
+
+Pattern 2 - Point out underrating:
+"[전공명]의 [기준명]에 [X.X]점을 줬는데, 그 점수는 좀 낮은 것 같아. 실제로 [통계/데이터]를 보면 이 전공은 [특성]이 뛰어나거든. 사용자의 '[키워드]'와도 잘 맞으니까 [Y.Y]점이 더 맞을 것 같아."
+
+Pattern 3 - Challenge logic:
+"[전공명]의 [기준명] 점수가 [X.X]점인데, 만약 사용자가 '[특성]'을 중시한다면 [논리]가 나와야 하는데 왜 그 점수야? 차라리 [Y.Y]점이 더 합리적이지 않을까?"
 
 **Improved Example:**
 
-❌ Bad critique:
-"산업디자인 - 학문적 깊이: 4.5는 과소평가야"
+❌ Bad critique (번호 형식):
+"**산업디자인 - 학문적 깊이**
+1. 제안된 점수: 4.5
+2. 문제점: 과소평가
+3. 적절한 점수: 6.5
+4. 근거: 더 높아야 함"
 
-✅ Good critique:
-"**산업디자인 - 학문적 깊이와 연구 기회**
-- 제안된 점수: 4.5
-- 문제점: 사용자가 '체계적 사고'를 언급했는데, 산업디자인의 다학제 연구(인간공학, 재료공학, UX 연구)를 간과했어. 실제 디자인 대학원 연구실 수는 컴공의 70% 수준이야
-- 적절한 점수: 6.5
-- 근거: 사용자의 '논리적 분석' 강점 + 디자인씽킹 방법론의 체계성 + 석사 진학률 35% = 6.5점"
+✅ Good critique (문장형):
+"산업디자인의 학문적 깊이를 4.5점으로 평가했는데, 이건 좀 낮은 것 같아. 사용자가 '체계적 사고'를 언급했잖아. 산업디자인은 인간공학, 재료공학, UX 연구 같은 다학제 연구가 활발한 분야야. 실제로 디자인 대학원 연구실 수가 컴공의 70% 수준이고, 석사 진학률도 35%나 돼. 사용자의 논리적 분석 강점과 디자인씽킹 방법론의 체계성을 고려하면 6.5점이 더 적절할 것 같아."
 
 [Important Points]
-1. Quote specific keywords from user's interests/aptitude/values.
-2. Mention actual major characteristics (curriculum, industry status, statistics).
-3. Provide clear logic for score differences.
+1. 자연스러운 문장으로 작성 (번호 형식 금지)
+2. 사용자의 구체적 키워드 인용
+3. 전공의 실제 특성이나 통계 제시
+4. 점수 차이에 대한 명확한 논리 설명
 
 ---
 
 **Notes:**
-- Write logically in 200-250 characters
-- Must quote specific user keywords
-- Present objective major characteristics or statistics
-- Clearly explain score calculation logic
+- 2-3개 전공-기준 조합을 선택하여 비평
+- 각 비평은 150-250자의 자연스러운 문장으로 작성
+- 반드시 사용자 키워드 인용
+- 객관적 전공 특성이나 통계 제시
+- 점수 산정 논리 명확히 설명
 
 **Tone Reminder**: Write casually as if talking to a friend. Use informal Korean (반말) naturally!
 **ALL your output MUST be in Korean.**
@@ -709,9 +730,27 @@ JSON 형식으로 답변:
     }},
     ...
   }},
-  "reasoning": "점수 결정 이유를 2-3문장으로 설명"
+  "reasoning": [
+    "첫 번째 결정 이유: 구체적인 전공-기준 조합과 사용자 특성 연결",
+    "두 번째 결정 이유: 에이전트 간 논의 내용과 합의/불일치 설명",
+    "세 번째 결정 이유: 전공별 강점/약점 종합"
+  ]
 }}
 ```
+
+**reasoning 작성 가이드 (배열 형식으로 3-5개 항목):**
+각 항목은 다음 요소를 포함:
+- 구체적인 전공명-기준명 조합 언급
+- 해당 점수가 나온 이유 (에이전트 논의 반영)
+- 사용자 특성과의 연결
+- 150-250자 정도의 풍부한 설명
+
+**좋은 예시:**
+[
+  "기계공학과는 산업 연계성과 진로 안정성에서 8.0점으로 최고점을 받았어. 사용자의 '안정적인 진로' 중시와 기계공학의 다양한 산업 연계(자동차, 항공, 제조)가 잘 맞는다는 세 에이전트의 합의가 있었지.",
+  "로봇공학과는 기술 혁신 가능성에서는 높은 평가를 받았지만, 산업 연계성과 진로 안정성에서 5.5점으로 가장 낮았어. Quark와 Zenith가 '신생 분야라 안정성이 부족하다'고 지적했고, Vortex도 최종적으로 동의했지.",
+  "차세대반도체융합공학부는 기술 전문성 강화(7.0)와 산업 연계성(7.5)에서 균형잡힌 평가를 받았어. 국가 전략 산업의 핵심 분야라는 점이 사용자의 '국가 전략 산업 기여' 가치와 부합했지."
+]
 
 **체크리스트:**
 - [ ] 모든 전공 포함됨
@@ -722,6 +761,8 @@ JSON 형식으로 답변:
 - [ ] 전체 범위 활용 (최소-최대 차이 ≥ 3.0)
 - [ ] 전공 간 평균 차이가 명확함 (표준편차 ≥ 0.5)
 - [ ] 토론 내용 반영
+- [ ] reasoning을 배열 형식으로 3-5개 항목 작성
+- [ ] 각 reasoning 항목이 구체적이고 풍부함
 """
     
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]

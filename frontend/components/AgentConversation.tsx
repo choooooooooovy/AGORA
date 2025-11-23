@@ -69,6 +69,33 @@ export function AgentConversation({
         // Clean content
         let cleanContent = turn.content;
 
+        // Round 1: Agent의 proposal에서 criteria JSON 파싱
+        if (currentSubStep === 1 && !isDirector && turn.type === 'proposal') {
+          try {
+            const jsonMatch = turn.content.match(/```json\s*([\s\S]*?)\s*```/) ||
+              turn.content.match(/\{[\s\S]*"criteria"[\s\S]*\}/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+              const criteria = parsed.criteria;
+
+              if (criteria && Array.isArray(criteria)) {
+                // 2개 기준을 보기 좋게 포맷팅
+                let formattedContent = '\n\n**📌 제안 기준:**\n\n';
+
+                criteria.forEach((criterion: { name: string; reasoning: string }, idx: number) => {
+                  formattedContent += `**${idx + 1}. ${criterion.name}**\n\n`;
+                  formattedContent += `${criterion.reasoning}\n\n`;
+                  if (idx < criteria.length - 1) formattedContent += '---\n\n';
+                });
+
+                cleanContent = formattedContent;
+              }
+            }
+          } catch (e) {
+            console.error('Failed to parse Round 1 proposal:', e);
+          }
+        }
+
         // Round 3: Agent의 proposal에서 decision_matrix JSON 파싱
         if (currentSubStep === 3 && !isDirector && turn.type === 'proposal') {
           try {
@@ -128,9 +155,30 @@ export function AgentConversation({
           try {
             const parsed = JSON.parse(turn.content);
 
-            // Round 1: selected_criteria와 summary
+            // Round 1: selected_criteria, rejected_criteria, summary
             if (parsed.summary && parsed.selected_criteria) {
-              cleanContent = `📋 **최종 결정**\n\n${parsed.summary}`;
+              let formattedContent = '📋 **최종 결정**\n\n';
+
+              // Summary
+              formattedContent += `${parsed.summary}\n\n`;
+
+              // Selected criteria
+              formattedContent += '**✅ 선택된 기준 (4개):**\n\n';
+              parsed.selected_criteria.forEach((criterion: SelectedCriterion, idx: number) => {
+                formattedContent += `**${idx + 1}. ${criterion.name}** (제안: ${criterion.source_agent})\n`;
+                formattedContent += `└ ${criterion.reasoning}\n\n`;
+              });
+
+              // Rejected criteria
+              if (parsed.rejected_criteria && parsed.rejected_criteria.length > 0) {
+                formattedContent += '**❌ 제외된 기준 (2개):**\n\n';
+                parsed.rejected_criteria.forEach((criterion: SelectedCriterion) => {
+                  formattedContent += `• **${criterion.name}** (제안: ${criterion.source_agent})\n`;
+                  formattedContent += `  └ ${criterion.reasoning}\n\n`;
+                });
+              }
+
+              cleanContent = formattedContent;
             }
             // Round 2: comparison_matrix와 reasoning
             else if (parsed.comparison_matrix && parsed.reasoning) {
@@ -142,15 +190,33 @@ export function AgentConversation({
                 formattedContent += `• ${pair}: **${score}점**\n`;
               });
 
-              // Reasoning을 그대로 표시
+              // Reasoning 처리 (배열 또는 문자열)
               formattedContent += '\n**💡 결정 근거:**\n\n';
-              formattedContent += parsed.reasoning;
+              if (Array.isArray(parsed.reasoning)) {
+                parsed.reasoning.forEach((reason: string, idx: number) => {
+                  formattedContent += `${idx + 1}. ${reason}\n\n`;
+                });
+              } else {
+                formattedContent += parsed.reasoning;
+              }
 
               cleanContent = formattedContent;
             }
             // Round 3: decision_matrix와 reasoning
             else if (parsed.decision_matrix && parsed.reasoning) {
-              cleanContent = `✅ **의사결정 매트릭스 완성**\n\n**💡 결정 근거:**\n\n${parsed.reasoning}`;
+              let formattedContent = '✅ **의사결정 매트릭스 완성**\n\n';
+
+              // Reasoning 처리 (배열 또는 문자열)
+              formattedContent += '**💡 결정 근거:**\n\n';
+              if (Array.isArray(parsed.reasoning)) {
+                parsed.reasoning.forEach((reason: string, idx: number) => {
+                  formattedContent += `${idx + 1}. ${reason}\n\n`;
+                });
+              } else {
+                formattedContent += parsed.reasoning;
+              }
+
+              cleanContent = formattedContent;
             }
           } catch (e) {
             console.error('Failed to parse final_decision:', e);
@@ -205,13 +271,15 @@ export function AgentConversation({
       console.log('[AgentConversation] Converted messages:', convertedMessages.length);
       allMessagesRef.current = convertedMessages;
 
-      // 메시지 초기화 및 애니메이션 시작
-      if (convertedMessages.length > 0) {
-        // 첫 번째 메시지는 즉시 표시
-        setDisplayedMessages([convertedMessages[0]]);
-        setCurrentMessageIndex(1); // 다음 메시지부터 시작
-        setTotalMessages(convertedMessages.length);
-      }
+      // 메시지 초기화 및 애니메이션 시작 - 다음 렌더에서 실행
+      setTimeout(() => {
+        if (convertedMessages.length > 0) {
+          // 첫 번째 메시지는 즉시 표시
+          setDisplayedMessages([convertedMessages[0]]);
+          setCurrentMessageIndex(1); // 다음 메시지부터 시작
+          setTotalMessages(convertedMessages.length);
+        }
+      }, 0);
     } else {
       console.log('[AgentConversation] No debate data found');
       allMessagesRef.current = [];
@@ -229,6 +297,16 @@ export function AgentConversation({
     }
 
     console.log('[AgentConversation] Setting timer for message', currentMessageIndex);
+
+    const previousMessage = allMessagesRef.current[currentMessageIndex - 1];
+    const previousContentLength = previousMessage.content.length;
+    let delay = 3000;
+    if (previousContentLength >= 300) {
+      delay = 10000;
+    } else if (previousContentLength >= 200) {
+      delay = 7000;
+    }
+
     const timer = setTimeout(() => {
       console.log('[AgentConversation] Displaying message', currentMessageIndex);
       setDisplayedMessages(prev => [
@@ -236,7 +314,7 @@ export function AgentConversation({
         allMessagesRef.current[currentMessageIndex]
       ]);
       setCurrentMessageIndex(prev => prev + 1);
-    }, 7000); // 7 seconds between messages
+    }, delay);
 
     return () => clearTimeout(timer);
   }, [currentMessageIndex]);
@@ -267,7 +345,7 @@ export function AgentConversation({
         <Card className="bg-[#0a0d12] border-[#3b4354] py-2">
           <CardContent className="p-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-700 text-white font-semibold">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-purple-700 text-white font-semibold">
                 DR
               </div>
               <div>

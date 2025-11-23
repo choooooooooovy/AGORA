@@ -13,6 +13,13 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    rules: {
+      // Disable Tailwind CSS v4 migration warnings
+      "@next/next/no-assign-module-variable": "off",
+      "tailwindcss/migration-from-tailwind-2": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;
