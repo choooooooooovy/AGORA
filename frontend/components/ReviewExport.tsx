@@ -31,17 +31,52 @@ export function ReviewExport({
       ? candidateMajors
       : ["컴퓨터공학", "데이터사이언스", "철학"];
 
-  // Criteria icons mapping
-  const criteriaIcons: Record<string, string> = {
-    "경제적 성장": "💰",
-    "개인 적성": "🎯",
-    "워라밸": "⚖️",
-    "혁신 잠재력": "💡",
-    "사회적 영향": "🌍",
-    "논리적 사고": "🧠",
-    "미적 감각": "🎨",
-    "협동 능력": "🤝",
-    "윤리 의식": "⚖️",
+  // Get icon for criterion based on keywords
+  const getCriterionIcon = (criterionName: string): string => {
+    const name = criterionName.toLowerCase();
+
+    // 경제/커리어
+    if (name.includes('경제') || name.includes('연봉') || name.includes('수익')) return '💰';
+    if (name.includes('취업') || name.includes('고용')) return '💼';
+    if (name.includes('안정')) return '🏦';
+
+    // 적성/능력
+    if (name.includes('적성')) return '🎯';
+    if (name.includes('논리') || name.includes('추론')) return '🧠';
+    if (name.includes('창의') || name.includes('혁신적')) return '✨';
+    if (name.includes('문제') && name.includes('해결')) return '🔧';
+    if (name.includes('분석')) return '📊';
+    if (name.includes('데이터')) return '📈';
+    if (name.includes('기술')) return '⚙️';
+
+    // 창의성/예술
+    if (name.includes('미적') || name.includes('심미')) return '🎨';
+    if (name.includes('예술')) return '🖼️';
+    if (name.includes('디자인')) return '✏️';
+
+    // 사회성/협업
+    if (name.includes('협동') || name.includes('협업')) return '🤝';
+    if (name.includes('리더')) return '👥';
+    if (name.includes('소통') || name.includes('커뮤니케이션')) return '💬';
+    if (name.includes('팀')) return '🎭';
+
+    // 가치관/영향력
+    if (name.includes('사회') && name.includes('영향')) return '🌏';
+    if (name.includes('윤리')) return '⚖️';
+    if (name.includes('기여')) return '🌱';
+
+    // 라이프스타일
+    if (name.includes('워라밸') || name.includes('균형')) return '🏖️';
+    if (name.includes('유연')) return '🕐';
+
+    // 혁신/미래
+    if (name.includes('혁신')) return '💡';
+    if (name.includes('미래') || name.includes('잠재')) return '🚀';
+    if (name.includes('성장')) return '📶';
+    if (name.includes('변화') || name.includes('적응')) return '🔄';
+
+    // 기본값
+    return '📊';
   };
 
   // Transform propCriteriaWeights to array format with icons
@@ -49,7 +84,7 @@ export function ReviewExport({
     ? Object.entries(propCriteriaWeights).map(([name, weight]) => ({
       name,
       weight: weight * 100, // Convert to percentage
-      icon: criteriaIcons[name] || "📊",
+      icon: getCriterionIcon(name),
     }))
     : [];
 
@@ -78,7 +113,7 @@ export function ReviewExport({
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-white text-3xl">최종 전공 추천</h1>
+            <h1 className="text-white text-3xl font-bold">최종 전공 추천</h1>
             <p className="text-[#9ca6ba] mt-2">
               TOPSIS 분석을 통해 도출된 {sortedMajors.length}개 전공의 최종 순위
             </p>
@@ -198,7 +233,7 @@ export function ReviewExport({
                     <span>{item.icon}</span>
                     {item.name}
                   </span>
-                  <span className="text-[#FF1F55] font-semibold">{item.weight.toFixed(3)}%</span>
+                  <span className="text-[#FF1F55] font-semibold">{item.weight.toFixed(1)}%</span>
                 </div>
                 <div className="h-1.5 bg-[#1b1f27] rounded-full overflow-hidden">
                   <div

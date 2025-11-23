@@ -1,10 +1,8 @@
 """Round 3: 전공별 점수 평가 (13-turn Debate System)"""
 
-import yaml
 import json
 import re
 from typing import Dict, Any, List, Tuple
-from pathlib import Path
 from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage
@@ -48,13 +46,6 @@ SCORING_GUIDE = """
 - 8-9 points: Only for truly exceptional and perfect cases (very rare)
 - 1-2 points: Only for clearly unsuitable cases (very rare)
 """
-
-
-def load_prompts() -> Dict[str, Any]:
-    """프롬프트 YAML 파일 로드"""
-    prompt_path = Path(__file__).parent.parent / "templates" / "round_prompts.yaml"
-    with open(prompt_path, 'r', encoding='utf-8') as f:
-        return yaml.safe_load(f)
 
 
 def run_round3_debate(state: Dict[str, Any]) -> Dict[str, Any]:

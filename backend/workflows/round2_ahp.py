@@ -1,10 +1,8 @@
 """Round 2: 쌍대비교 토론 (13-turn Debate System)"""
 
-import yaml
 import json
 import re
 from typing import Dict, Any, List, Tuple
-from pathlib import Path
 from datetime import datetime
 from itertools import combinations
 from langchain_openai import ChatOpenAI
@@ -57,13 +55,6 @@ AHP_SCORE_GUIDE = """
 - Most scores should be within 2-6 range
 - Use 7 or above only when there's a very clear and extreme difference
 """
-
-
-def load_prompts() -> Dict[str, Any]:
-    """프롬프트 YAML 파일 로드"""
-    prompt_path = Path(__file__).parent.parent / "templates" / "round_prompts.yaml"
-    with open(prompt_path, 'r', encoding='utf-8') as f:
-        return yaml.safe_load(f)
 
 
 def generate_comparison_pairs(criteria: List[str]) -> List[Tuple[str, str]]:

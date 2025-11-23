@@ -1,18 +1,9 @@
 """Round 1: 평가 기준 토론 (13-turn Debate System)"""
 
-import yaml
 from typing import Dict, Any, List
-from pathlib import Path
 from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage
-
-
-def load_prompts() -> Dict[str, Any]:
-    """프롬프트 YAML 파일 로드"""
-    prompt_path = Path(__file__).parent.parent / "templates" / "round_prompts.yaml"
-    with open(prompt_path, 'r', encoding='utf-8') as f:
-        return yaml.safe_load(f)
 
 
 def run_round1_debate(state: Dict[str, Any]) -> Dict[str, Any]:
