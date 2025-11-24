@@ -135,7 +135,7 @@ export default function App() {
     }
   };
 
-  // Run Round 1: Criteria Selection (with streaming)
+  // Run Round 1: Criteria Selection
   const runRound1 = async () => {
     if (!sessionId) return;
     setIsLoadingRound(true);
@@ -155,41 +155,12 @@ export default function App() {
         throw new Error(`Round 1 API Error: ${response.status}`);
       }
 
-      // EventSource 방식으로 스트리밍 받기
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+      const result = await response.json();
+      console.log("Round 1 completed - Raw result:", result);
+      console.log("Round 1 debate turns:", result.data?.debate_turns);
+      console.log("Round 1 final criteria:", result.data?.final_criteria);
 
-      if (!reader) {
-        throw new Error("No response body");
-      }
-
-      let buffer = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = JSON.parse(line.slice(6));
-
-            if (data.type === "turn") {
-              console.log(`Round 1 Turn ${data.turn} completed`);
-              // 턴별로 UI 업데이트 가능 (추후 구현)
-            } else if (data.type === "complete") {
-              console.log("Round 1 completed - Raw data:", data.data);
-              console.log("Round 1 debate turns:", data.data?.round1_debate_turns);
-              console.log("Round 1 director decision:", data.data?.round1_director_decision);
-              setRound1Data(data.data);
-            } else if (data.type === "error") {
-              throw new Error(data.error);
-            }
-          }
-        }
-      }
+      setRound1Data(result.data);
     } catch (err) {
       console.error("Failed to run Round 1:", err);
       setError(err instanceof Error ? err.message : "Round 1 실행에 실패했습니다.");

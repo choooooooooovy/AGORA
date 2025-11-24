@@ -458,7 +458,7 @@ export function AgentConversation({
       <div className="w-80 shrink-0">
         <Card className="h-full overflow-y-auto bg-[#0a0d12] border-[#3b4354] py-0">
           <CardContent className="p-4">
-            <h3 className="mb-3 text-lg font-semibold text-white">
+            <h3 className="mb-3 text-lg font-bold text-white">
               {currentSubStep === 1 && "선정된 평가 기준"}
               {currentSubStep === 2 && "AHP 가중치"}
               {currentSubStep === 3 && "의사결정 매트릭스"}

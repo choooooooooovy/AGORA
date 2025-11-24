@@ -5,24 +5,38 @@ from pathlib import Path
 import json
 
 
-def generate_final_report(state: Dict[str, Any]) -> Dict[str, Any]:
+def generate_final_report(
+    session_id: str,
+    user_input: Dict[str, Any],
+    personas: List[Dict[str, Any]],
+    round1_result: Dict[str, Any],
+    round2_result: Dict[str, Any],
+    round3_result: Dict[str, Any],
+    round4_result: Dict[str, Any]
+) -> Dict[str, Any]:
     """
     Generate frontend-ready report data after Round 4 completion
     
     Args:
-        state: Complete state with Round 1-4 results
+        session_id: Session identifier
+        user_input: User input data
+        personas: Agent personas
+        round1_result: Round 1 results (selected criteria)
+        round2_result: Round 2 results (AHP weights)
+        round3_result: Round 3 results (decision matrix)
+        round4_result: Round 4 results (TOPSIS ranking)
         
     Returns:
         Structured report data for frontend UI
     """
     
-    # Extract data from state
-    topsis_result = state.get('topsis_result', {})
-    ranking = topsis_result.get('ranking', [])
-    criteria_weights = state.get('criteria_weights', {})
-    decision_matrix = state.get('decision_matrix', {})
-    selected_criteria = state.get('selected_criteria', [])
-    agent_personas = state.get('agent_personas', [])
+    # Extract data from round results
+    ranking = round4_result.get('final_ranking', [])
+    criteria_weights = round2_result.get('criteria_weights', {})
+    decision_matrix = round3_result.get('decision_matrix', {})
+    selected_criteria = round1_result.get('final_criteria', [])  # Round 1에서는 final_criteria로 저장됨
+    agent_personas = personas
+    consistency_ratio = round2_result.get('consistency_ratio', 0)
     
     # 1. Top 3 Recommendations
     top_recommendations = []
@@ -102,7 +116,7 @@ def generate_final_report(state: Dict[str, Any]) -> Dict[str, Any]:
     }
     
     return {
-        "session_id": state.get('session_id', ''),
+        "session_id": session_id,
         "top_recommendations": top_recommendations,
         "complete_ranking": complete_ranking,
         "criteria_weights": sorted_criteria_weights,
@@ -112,25 +126,23 @@ def generate_final_report(state: Dict[str, Any]) -> Dict[str, Any]:
         "metadata": {
             "total_majors": len(ranking),
             "total_criteria": len(criteria_weights),
-            "consistency_ratio": round(state.get('consistency_ratio', 0), 4)
+            "consistency_ratio": round(consistency_ratio, 4)
         }
     }
 
 
-def save_report(state: Dict[str, Any], output_dir: Path = Path("output")) -> Path:
+def save_report(report_data: Dict[str, Any], session_id: str, output_dir: Path = Path("output")) -> Path:
     """
-    Generate and save final report as JSON
+    Save final report as JSON
     
     Args:
-        state: Complete state with Round 1-4 results
+        report_data: Generated report data
+        session_id: Session identifier
         output_dir: Directory to save report
         
     Returns:
         Path to saved report file
     """
-    report_data = generate_final_report(state)
-    
-    session_id = state.get('session_id', 'unknown')
     report_file = output_dir / f"report_{session_id}.json"
     
     with open(report_file, 'w', encoding='utf-8') as f:

@@ -18,14 +18,19 @@ AGORA is an AI decision-making system that recommends optimal academic majors ba
 ### Tech Stack
 **Backend**
 - Python 3.10+
+- FastAPI
 - LangChain + OpenAI GPT-4o
 - AHP / TOPSIS algorithms
 
 **Frontend**
-- Next.js 15 (App Router)
+- Next.js 16 (App Router)
 - TypeScript
 - Tailwind CSS
 - shadcn/ui
+
+**Deployment**
+- Frontend: Vercel
+- Backend: Railway
 
 ---
 
@@ -61,6 +66,11 @@ Each round follows a structured debate format:
 ```
 AGORA/
 ├── backend/
+│   ├── main.py                       # FastAPI application
+│   ├── config.py                     # Configuration
+│   ├── requirements.txt              # Python dependencies
+│   ├── Procfile                      # Railway deployment
+│   ├── railway.json                  # Railway config
 │   ├── core/
 │   │   ├── persona_generator.py      # AI Agent Persona generation
 │   │   └── workflow_engine.py        # Workflow orchestration
@@ -68,31 +78,30 @@ AGORA/
 │   │   ├── round1_criteria.py        # Round 1: Criteria selection
 │   │   ├── round2_ahp.py             # Round 2: AHP weighting
 │   │   ├── round3_scoring.py         # Round 3: Major evaluation
-│   │   └── round4_topsis.py          # Round 4: TOPSIS ranking
+│   │   ├── round4_topsis.py          # Round 4: TOPSIS ranking
+│   │   └── report_generator.py       # Final report generation
 │   ├── utils/
 │   │   ├── ahp_calculator.py         # AHP calculation logic
 │   │   └── topsis_calculator.py      # TOPSIS calculation logic
-│   ├── scripts/
-│   │   ├── generate_personas.py      # Persona generation script
-│   │   └── round*_debate.py          # Round execution scripts
+│   ├── data/
+│   │   └── user_inputs/              # User input JSON files
 │   └── output/                       # Round results (JSON)
 │
 └── frontend/
     ├── app/
     │   ├── page.tsx                  # Main page
-    │   └── api/                      # API Routes
-    │       ├── user-input/           # Persona generation
-    │       ├── round/[id]/           # Round execution
-    │       └── report/[sessionId]/   # Final report
+    │   └── api/                      # Next.js API Routes (legacy)
     ├── components/
     │   ├── UserInputForm.tsx         # User input form
-    │   ├── AgentConversation.tsx     # Debate visualization (core)
+    │   ├── AgentConversation.tsx     # Debate visualization
     │   ├── CriteriaWeightsPanel.tsx  # AHP weights visualization
     │   ├── DecisionMatrixTable.tsx   # Decision Matrix table
     │   └── ReviewExport.tsx          # Final recommendations
-    └── lib/
-        ├── types.ts                  # TypeScript type definitions
-        └── python.ts                 # Python backend integration
+    ├── lib/
+    │   ├── types.ts                  # TypeScript type definitions
+    │   └── api.ts                    # Backend API client
+    ├── .env.example                  # Environment variables template
+    └── package.json                  # Node.js dependencies
 ```
 
 ---
@@ -112,19 +121,52 @@ cd backend
 pip install -r requirements.txt
 
 # Create .env file
-echo "OPENAI_API_KEY=your_api_key_here" > .env
+cp .env.example .env
+# Edit .env and add your OPENAI_API_KEY
 ```
 
 **Frontend Setup**
 ```bash
 cd frontend
 npm install
-npm run dev
+
+# Create .env.local for development
+cp .env.example .env.local
+# Edit .env.local if needed (default: http://localhost:8000)
 ```
 
 ### Running the Application
-1. Start frontend: `http://localhost:3000`
-2. Enter user input → Generate AI agents → Run Rounds 1-4 → View final recommendations
+
+**Option 1: Local Development**
+
+Terminal 1 (Backend):
+```bash
+cd backend
+python main.py
+# or
+uvicorn main:app --reload
+```
+
+Terminal 2 (Frontend):
+```bash
+cd frontend
+npm run dev
+```
+
+Access: http://localhost:3000
+
+**Option 2: Production Deployment**
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment guide.
+
+- **Frontend**: Vercel
+- **Backend**: Railway
+
+### Usage Flow
+1. Enter user input (interests, aptitudes, values, candidate majors)
+2. System generates AI agent personas
+3. Run Rounds 1-4 sequentially
+4. View final recommendations and detailed report
 
 ---
 
@@ -189,19 +231,6 @@ Analyzes user input text to extract 3 contrasting perspectives:
 - Normalize Decision Matrix and apply weights
 - Calculate distances from ideal (A+) and anti-ideal (A-) solutions
 - Derive final rankings based on closeness coefficient
-
----
-
-## API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/user-input` | POST | User input → AI Persona generation |
-| `/api/round/1` | POST | Round 1: Criteria selection |
-| `/api/round/2` | POST | Round 2: AHP weight calculation |
-| `/api/round/3` | POST | Round 3: Major evaluation |
-| `/api/round/4` | POST | Round 4: TOPSIS ranking |
-| `/api/report/[sessionId]` | GET | Retrieve complete session data |
 
 ---
 
