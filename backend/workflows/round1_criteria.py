@@ -498,7 +498,11 @@ def _director_final_decision(
     add_transition: bool = True
 ) -> Dict[str, Any]:
     """Director가 토론 내용을 바탕으로 최종 기준 선정"""
-    llm = ChatOpenAI(model="gpt-4o", temperature=0.0)
+    llm = ChatOpenAI(
+        model="gpt-4o", 
+        temperature=0.0,
+        max_tokens=2000  # 기준 선정 JSON이 잘리지 않도록
+    )
     
     # 토론 전체 내용 정리
     debate_summary = "\n\n".join([
@@ -579,12 +583,31 @@ Answer in the following JSON format:
         content = re.sub(r'^```\s*', '', content, flags=re.MULTILINE)
         content = re.sub(r'\s*```$', '', content, flags=re.MULTILINE)
     
+    # JSON 파싱 시도
+    decision_data = {}
     try:
-        decision_data = json.loads(content.strip())
+        # trailing comma 제거
+        cleaned_content = content.strip()
+        cleaned_content = re.sub(r',\s*}', '}', cleaned_content)
+        cleaned_content = re.sub(r',\s*]', ']', cleaned_content)
+        
+        decision_data = json.loads(cleaned_content)
+        print(f"[SUCCESS] Round 1 Director final decision JSON 파싱 성공")
     except json.JSONDecodeError as e:
-        print(f"JSON 파싱 실패: {e}")
-        print(f"응답 내용:\n{content}")
-        raise
+        print(f"[ERROR] Round 1 JSON 파싱 실패: {e}")
+        print(f"[ERROR] 실패한 내용 (첫 500자): {content[:500]}")
+        
+        # JSON 추출 재시도
+        json_match = re.search(r'\{[^{}]*"selected_criteria"[^{}]*:.*?\]\s*[,}]', content, re.DOTALL)
+        if json_match:
+            try:
+                decision_data = json.loads(json_match.group(0))
+                print(f"[SUCCESS] 정규식으로 JSON 추출 성공")
+            except:
+                print(f"[ERROR] 정규식 추출도 실패")
+                decision_data = {}
+        else:
+            decision_data = {}
     
     return {
         "turn": len(debate_history) + 1,

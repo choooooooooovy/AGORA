@@ -587,7 +587,8 @@ def _director_final_decision(state, personas, criteria_names, alternatives, deba
     llm = ChatOpenAI(
         model=Config.OPENAI_MODEL,
         temperature=Config.DIRECTOR_TEMPERATURE,
-        api_key=Config.OPENAI_API_KEY
+        api_key=Config.OPENAI_API_KEY,
+        max_tokens=4000  # Decision Matrix가 길어질 수 있으므로 충분한 토큰 할당
     )
     
     debate_summary = "\n\n".join([
@@ -769,7 +770,7 @@ JSON 형식으로 답변:
     response = llm.invoke(messages)
     content = response.content
     
-    # JSON 파싱
+    # JSON 파싱 전 전처리
     if '```json' in content:
         content = re.sub(r'^```json\s*', '', content, flags=re.MULTILINE)
         content = re.sub(r'\s*```$', '', content, flags=re.MULTILINE)
@@ -777,11 +778,31 @@ JSON 형식으로 답변:
         content = re.sub(r'^```\s*', '', content, flags=re.MULTILINE)
         content = re.sub(r'\s*```$', '', content, flags=re.MULTILINE)
     
+    # JSON 파싱 시도
+    decision_data = {}
     try:
-        decision_data = json.loads(content.strip())
+        # 줄바꿈 정규화 및 trailing comma 제거
+        cleaned_content = content.strip()
+        cleaned_content = re.sub(r',\s*}', '}', cleaned_content)  # trailing comma 제거
+        cleaned_content = re.sub(r',\s*]', ']', cleaned_content)  # trailing comma in arrays
+        
+        decision_data = json.loads(cleaned_content)
+        print(f"[SUCCESS] Director final decision JSON 파싱 성공")
     except json.JSONDecodeError as e:
         print(f"[ERROR] JSON 파싱 실패: {e}")
-        decision_data = {}
+        print(f"[ERROR] 실패한 내용 (첫 500자): {content[:500]}")
+        
+        # JSON 추출 재시도
+        json_match = re.search(r'\{[^{}]*"decision_matrix"[^{}]*:.*?\}\s*\}', content, re.DOTALL)
+        if json_match:
+            try:
+                decision_data = json.loads(json_match.group(0))
+                print(f"[SUCCESS] 정규식으로 JSON 추출 성공")
+            except:
+                print(f"[ERROR] 정규식 추출도 실패")
+                decision_data = {}
+        else:
+            decision_data = {}
     
     return {
         "turn": len(debate_history) + 1,

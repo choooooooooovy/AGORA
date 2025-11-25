@@ -203,6 +203,7 @@ export default function App() {
     if (!sessionId) return;
     setIsLoadingRound(true);
     try {
+      console.log('[Round 3] Starting with sessionId:', sessionId);
       const response = await fetch(`/api/round/3`, {
         method: "POST",
         headers: {
@@ -211,14 +212,19 @@ export default function App() {
         body: JSON.stringify({ sessionId }),
       });
 
+      console.log('[Round 3] Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error(`Round 3 API Error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('[Round 3] Error response:', errorText);
+        throw new Error(`Round 3 API Error: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
+      console.log('[Round 3] Result:', result);
       const data: Round3Result = result.data;
       setRound3Data(data);
-      console.log("Round 3 completed:", data);
+      console.log("Round 3 completed - decision_matrix:", data?.decision_matrix);
     } catch (err) {
       console.error("Failed to run Round 3:", err);
       setError(err instanceof Error ? err.message : "Round 3 실행에 실패했습니다.");
@@ -232,6 +238,7 @@ export default function App() {
     if (!sessionId) return;
     setIsLoadingRound(true);
     try {
+      console.log('[Round 4] Starting with sessionId:', sessionId);
       const response = await fetch(`/api/round/4`, {
         method: "POST",
         headers: {
@@ -240,14 +247,19 @@ export default function App() {
         body: JSON.stringify({ sessionId }),
       });
 
+      console.log('[Round 4] Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error(`Round 4 API Error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('[Round 4] Error response:', errorText);
+        throw new Error(`Round 4 API Error: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
+      console.log('[Round 4] Result:', result);
       const data: TOPSISResult = result.data;
       setRound4Data(data);
-      console.log("Round 4 completed:", data);
+      console.log("Round 4 completed - final_ranking:", data?.final_ranking);
     } catch (err) {
       console.error("Failed to run Round 4:", err);
       setError(err instanceof Error ? err.message : "Round 4 실행에 실패했습니다.");

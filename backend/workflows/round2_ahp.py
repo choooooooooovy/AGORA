@@ -587,7 +587,8 @@ def _director_final_decision(state, personas, criteria, pairs, debate_history):
     llm = ChatOpenAI(
         model=Config.OPENAI_MODEL,
         temperature=Config.DIRECTOR_TEMPERATURE,
-        api_key=Config.OPENAI_API_KEY
+        api_key=Config.OPENAI_API_KEY,
+        max_tokens=2000  # 비교 행렬 JSON이 잘리지 않도록
     )
     
     debate_summary = "\n\n".join([
@@ -714,7 +715,7 @@ Answer in JSON format:
     response = llm.invoke(messages)
     content = response.content
     
-    # JSON 파싱
+    # JSON 파싱 전 전처리
     if '```json' in content:
         content = re.sub(r'^```json\s*', '', content, flags=re.MULTILINE)
         content = re.sub(r'\s*```$', '', content, flags=re.MULTILINE)
@@ -722,10 +723,19 @@ Answer in JSON format:
         content = re.sub(r'^```\s*', '', content, flags=re.MULTILINE)
         content = re.sub(r'\s*```$', '', content, flags=re.MULTILINE)
     
+    # JSON 파싱 시도
+    decision_data = {}
     try:
-        decision_data = json.loads(content.strip())
+        # trailing comma 제거
+        cleaned_content = content.strip()
+        cleaned_content = re.sub(r',\s*}', '}', cleaned_content)
+        cleaned_content = re.sub(r',\s*]', ']', cleaned_content)
+        
+        decision_data = json.loads(cleaned_content)
+        print(f"[SUCCESS] Round 2 Director final decision JSON 파싱 성공")
     except json.JSONDecodeError as e:
-        print(f"JSON 파싱 실패: {e}")
+        print(f"[ERROR] Round 2 JSON 파싱 실패: {e}")
+        print(f"[ERROR] 실패한 내용 (첫 500자): {content[:500]}")
         decision_data = {}
     
     return {
