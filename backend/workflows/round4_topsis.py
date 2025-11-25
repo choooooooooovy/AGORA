@@ -42,9 +42,21 @@ def calculate_topsis_ranking(state: Dict[str, Any]) -> Dict[str, Any]:
         state['final_ranking'] = topsis_result.get('ranking', [])
         state['status'] = 'success'
         
+        # 로그 출력
+        print("\n" + "="*60)
+        print("[TOPSIS 최종 순위 계산 완료]")
+        print("="*60)
+        for rank_info in state['final_ranking']:
+            rank = rank_info['rank']
+            major = rank_info['major']
+            closeness = rank_info['closeness_coefficient']
+            print(f"  {rank}위. {major} (근접도 계수: {closeness:.4f})")
+        print("="*60 + "\n")
+        
     except Exception as e:
         state['status'] = 'failed'
         state['errors'] = state.get('errors', []) + [str(e)]
+        print(f"\n[ERROR] TOPSIS 계산 실패: {str(e)}\n")
     
     return state
 
