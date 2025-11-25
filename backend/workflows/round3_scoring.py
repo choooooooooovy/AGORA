@@ -7,6 +7,7 @@ from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage
 from config import Config
+from utils.datetime_utils import get_kst_timestamp
 
 
 # Decision Matrix score scale guide
@@ -169,7 +170,7 @@ Agent: {lead_agent['name']}
         "type": "phase_intro",
         "target": lead_agent['name'],
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -225,7 +226,7 @@ Next agent: {next_agent['name']}
         "type": "phase_summary",
         "target": next_agent['name'],
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -266,7 +267,7 @@ All three agents ({', '.join(agent_names)}) have finished presenting their scori
         "type": "phase_summary",
         "target": None,
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -418,7 +419,7 @@ Pattern 5 - Potential-based: "사용자의 '[적성]' 능력이 있으면 이 �
         "type": "proposal",
         "content": content,
         "decision_matrix": decision_matrix,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -520,7 +521,7 @@ Pattern 3 - Challenge logic:
         "type": "critique",
         "target": target_agent['name'],
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -578,7 +579,7 @@ Defend logically in 150-250 characters.
         "type": "defense",
         "target": [c['name'] for c in critics],
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -812,7 +813,7 @@ JSON 형식으로 답변:
         "content": content,
         "decision_matrix": decision_data.get('decision_matrix', {}),
         "reasoning": decision_data.get('reasoning', ''),
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 

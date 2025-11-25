@@ -9,6 +9,7 @@ from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage
 from config import Config
 from utils.ahp_calculator import AHPCalculator
+from utils.datetime_utils import get_kst_timestamp
 
 
 # AHP score scale guide
@@ -245,7 +246,7 @@ Agent: {lead_agent['name']}
         "type": "phase_intro",
         "target": lead_agent['name'],
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -292,7 +293,7 @@ Next agent: {next_agent['name']}
         "type": "phase_summary",
         "target": next_agent['name'],
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -333,7 +334,7 @@ All three agents ({', '.join(agent_names)}) have finished presenting their pairw
         "type": "phase_summary",
         "target": None,
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -436,7 +437,7 @@ For each pair, judge "How much more important is A than B?"
         "type": "proposal",
         "content": content,
         "comparison_matrix": comparison_matrix,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -507,7 +508,7 @@ Rebut logically in 150-250 characters.
         "type": "critique",
         "target": target_agent['name'],
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -578,7 +579,7 @@ Defend logically in 150-250 characters.
         "type": "defense",
         "target": [c['name'] for c in critics],
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -746,7 +747,7 @@ Answer in JSON format:
         "content": content,
         "comparison_matrix": decision_data.get('comparison_matrix', {}),
         "reasoning": decision_data.get('reasoning', ''),
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 

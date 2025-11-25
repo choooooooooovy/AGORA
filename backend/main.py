@@ -18,6 +18,7 @@ from workflows.round1_criteria import run_round1_debate
 from workflows.round2_ahp import run_round2_debate
 from workflows.round3_scoring import run_round3_debate
 from workflows.round4_topsis import calculate_topsis_ranking
+from utils.datetime_utils import get_kst_timestamp, get_kst_now
 from workflows.report_generator import generate_final_report, save_report
 
 # 설정 검증
@@ -96,7 +97,7 @@ class ReportResponse(BaseModel):
 
 def generate_session_id() -> str:
     """세션 ID 생성"""
-    timestamp = int(datetime.now().timestamp() * 1000)
+    timestamp = int(get_kst_now().timestamp() * 1000)
     import random
     import string
     random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
@@ -109,7 +110,7 @@ def save_user_input(session_id: str, user_input: UserInputRequest) -> Path:
     
     user_input_data = {
         "session_id": session_id,
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": get_kst_timestamp(),
         "interests": user_input.interests,
         "aptitudes": user_input.aptitudes,
         "core_values": user_input.core_values,
@@ -161,7 +162,7 @@ async def root():
         "status": "running",
         "service": "AGORA API",
         "version": "1.0.0",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -171,7 +172,7 @@ async def health_check():
     return {
         "status": "healthy",
         "openai_configured": bool(Config.OPENAI_API_KEY),
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -249,7 +250,7 @@ async def execute_round1(request: RoundRequest):
         # 결과 저장
         output_data = {
             "session_id": request.session_id,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": get_kst_timestamp(),
             "round1_debate_turns": final_state.get("round1_debate_turns", []),
             "round1_director_decision": director_decision,
             "final_criteria": final_state.get("selected_criteria", [])
@@ -308,7 +309,7 @@ async def execute_round2(request: RoundRequest):
         # 결과 저장
         output_data = {
             "session_id": request.session_id,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": get_kst_timestamp(),
             "round2_debate_turns": final_state.get("round2_debate_turns", []),
             "round2_director_decision": director_decision,
             "criteria_weights": final_state.get("criteria_weights", {}),
@@ -366,7 +367,7 @@ async def execute_round3(request: RoundRequest):
         # 결과 저장
         output_data = {
             "session_id": request.session_id,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": get_kst_timestamp(),
             "round3_debate_turns": final_state.get("round3_debate_turns", []),
             "round3_director_decision": director_decision,
             "decision_matrix": final_state.get("decision_matrix", {})
@@ -419,7 +420,7 @@ async def execute_round4(request: RoundRequest):
         # 결과 저장
         output_data = {
             "session_id": request.session_id,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": get_kst_timestamp(),
             "final_ranking": ranking_list,
             "topsis_details": {
                 "ideal_solution": topsis_result.get('ideal_solution', {}),

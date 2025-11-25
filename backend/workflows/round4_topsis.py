@@ -1,6 +1,7 @@
 """Round 4: TOPSIS 최종 순위 계산"""
 
 from typing import Dict, Any
+from utils.datetime_utils import get_kst_timestamp
 
 
 def calculate_topsis_ranking(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -64,7 +65,7 @@ def format_final_output(state: Dict[str, Any]) -> Dict[str, Any]:
     # 기본 정보
     output = {
         'session_id': state.get('session_id', 'unknown'),
-        'timestamp': datetime.now().isoformat(),
+        'timestamp': get_kst_timestamp(),
         'status': state.get('status', 'unknown'),
         
         # 입력 요약 (alternatives 제거, user_input.candidate_majors 사용)

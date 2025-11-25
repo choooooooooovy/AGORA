@@ -4,6 +4,7 @@ from typing import Dict, Any, List
 from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage
+from utils.datetime_utils import get_kst_timestamp
 
 
 def run_round1_debate(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -135,7 +136,7 @@ Perspective: {lead_agent.get('perspective', 'Core perspective')}
         "type": "phase_intro",
         "target": lead_agent['name'],
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -198,7 +199,7 @@ Next agent: {next_agent['name']}
         "type": "phase_summary",
         "target": next_agent['name'],
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -243,7 +244,7 @@ All three agents ({', '.join(agent_names)}) have finished presenting their persp
         "type": "phase_summary",
         "target": None,
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -327,7 +328,7 @@ User Information:
         "type": "proposal",
         "target": None,
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -399,9 +400,9 @@ Pattern 5 - Deepen the reasoning: "그 기준이 중요한 이유는 알겠는�
         "phase": f"Phase {phase}: {target_agent['name']} 주도권",
         "speaker": questioner['name'],
         "type": "question",
-        "target": target_agent['name'],
+        "target": lead_agent['name'],
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -487,7 +488,7 @@ Pattern 5 - Partial Agreement + Emphasis: "맞아, [일부 동의]. 그렇지만
         "type": "answer",
         "target": [q['name'] for q in questioners],
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
 
 
@@ -618,7 +619,7 @@ Answer in the following JSON format:
         "content": content,
         "selected_criteria": decision_data.get('selected_criteria', []),
         "summary": decision_data.get('summary', ''),
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }
     user_input = state['user_input']
     majors = user_input['candidate_majors']  # alternatives 대신 직접 사용
@@ -666,5 +667,5 @@ Answer in the following JSON format:
         "type": "proposal",
         "target": None,
         "content": response.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": get_kst_timestamp()
     }

@@ -300,11 +300,11 @@ export function AgentConversation({
 
     const previousMessage = allMessagesRef.current[currentMessageIndex - 1];
     const previousContentLength = previousMessage.content.length;
-    let delay = 3000;
+    let delay = 5000;
     if (previousContentLength >= 300) {
-      delay = 10000;
+      delay = 13500;
     } else if (previousContentLength >= 200) {
-      delay = 7000;
+      delay = 10000;
     }
 
     const timer = setTimeout(() => {
